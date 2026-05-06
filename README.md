@@ -289,6 +289,97 @@ Rules:
 - Tokens must never be written to logs, data files, generated Markdown, commits, or PR descriptions.
 - Local generated output should be deterministic where possible.
 
+## Setup and Usage
+
+### Install dependencies
+
+```bash
+pnpm install
+```
+
+### Configure GitHub access
+
+Create a GitHub token and expose it through the environment variable named by `github.token_env`.
+
+For public repositories, the token should be able to read public repository metadata through the GitHub GraphQL API. For private repositories, grant the equivalent private repository read access.
+
+Example:
+
+```bash
+export GITHUB_TOKEN=ghp_your_token_here
+```
+
+Do not commit `config.yaml` if it contains private repo names you do not want public. Never write token values into config files.
+
+### Create config
+
+Create `config.yaml` in the project root:
+
+```yaml
+github:
+  username: rogerdigital
+  token_env: GITHUB_TOKEN
+
+repos:
+  - openclaw/openclaw
+
+output:
+  directory: output
+
+site:
+  owner_name: Roger Deng
+  tagline: iOS Engineer | AI-native Builder | Open-source Contributor
+```
+
+### Run the workflow
+
+Fetch PR snapshots:
+
+```bash
+pnpm dev -- sync
+```
+
+Inspect current state:
+
+```bash
+pnpm dev -- status
+```
+
+Generate contribution assets:
+
+```bash
+pnpm dev -- generate
+```
+
+Generate an agent handoff prompt:
+
+```bash
+pnpm dev -- prompt --pr openclaw/openclaw#74224 --type fix-ci
+```
+
+Supported prompt types:
+
+- `fix-ci`
+- `address-review`
+- `add-test`
+- `maintainer-reply`
+- `resume`
+- `summary`
+
+### Verify locally
+
+```bash
+pnpm test
+pnpm build
+pnpm lint
+```
+
+### Current limitations
+
+- `sync` calls GitHub live and requires network access.
+- Generated contribution impact text starts from PR metadata and is designed to be manually curated in `data/contributions.json`.
+- Personal website sync is Markdown output only. It does not modify an external website repository yet.
+
 ## Data Model
 
 ### Pull Request Snapshot
