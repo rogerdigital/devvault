@@ -2,6 +2,23 @@
   "name": "devvault",
   "version": "0.1.0",
   "description": "Local-first personal contribution engine for GitHub PR lifecycle automation.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rogerdigital/devvault.git"
+  },
+  "keywords": [
+    "github",
+    "pull-request",
+    "cli",
+    "open-source",
+    "portfolio",
+    "markdown"
+  ],
+  "bugs": {
+    "url": "https://github.com/rogerdigital/devvault/issues"
+  },
+  "homepage": "https://github.com/rogerdigital/devvault#readme",
   "type": "module",
   "bin": {
     "devvault": "./dist/cli/index.js"
