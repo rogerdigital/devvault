@@ -7,6 +7,11 @@ describe("createProgram", () => {
     const program = createProgram();
 
     expect(program.name()).toBe("devvault");
-    expect(program.commands.map((command) => command.name())).toContain("status");
+    expect(program.commands.map((command) => command.name())).toEqual([
+      "sync",
+      "status",
+      "generate",
+      "prompt"
+    ]);
   });
 });
