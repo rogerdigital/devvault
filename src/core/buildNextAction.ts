@@ -38,19 +38,19 @@ export function buildNextActionForStatus(
       return {
         group: "needs_action",
         reason: "Reviewer requested changes.",
-        next: "Address review feedback and push a focused update."
+        next: buildReviewNextAction(pr)
       };
     case "ci_failed":
       return {
         group: "needs_action",
-        reason: "CI checks failed.",
+        reason: buildCiFailureReason(pr),
         next: "Inspect failing checks and generate a fix-ci prompt."
       };
     case "maintainer_commented":
       return {
         group: "needs_action",
         reason: "Maintainer activity was detected.",
-        next: "Review the latest maintainer comment and decide whether to reply or update code."
+        next: buildMaintainerCommentNextAction(pr)
       };
     case "ci_passed":
       return {
@@ -71,4 +71,50 @@ export function buildNextActionForStatus(
         next: "Monitor for CI, review, or maintainer activity."
       };
   }
+}
+
+function buildCiFailureReason(pr: PullRequestSnapshot): string {
+  const failedChecks = pr.checkRuns
+    ?.filter((check) => check.conclusion === "FAILURE")
+    .map((check) => check.name);
+
+  if (failedChecks?.length) {
+    return `CI checks failed: ${failedChecks.join(", ")}.`;
+  }
+
+  return "CI checks failed.";
+}
+
+function buildReviewNextAction(pr: PullRequestSnapshot): string {
+  const latestMaintainerComment = getLatestMaintainerComment(pr);
+
+  if (latestMaintainerComment) {
+    return `Address reviewer feedback: ${summarizeComment(latestMaintainerComment.body)}`;
+  }
+
+  return "Address review feedback and push a focused update.";
+}
+
+function buildMaintainerCommentNextAction(pr: PullRequestSnapshot): string {
+  const latestMaintainerComment = getLatestMaintainerComment(pr);
+
+  if (latestMaintainerComment) {
+    return `Review maintainer comment: ${summarizeComment(latestMaintainerComment.body)}`;
+  }
+
+  return "Review the latest maintainer comment and decide whether to reply or update code.";
+}
+
+function getLatestMaintainerComment(pr: PullRequestSnapshot) {
+  return pr.reviewComments?.filter((comment) => comment.isMaintainer).at(-1);
+}
+
+function summarizeComment(body: string): string {
+  const singleLine = body.replace(/\s+/g, " ").trim();
+
+  if (singleLine.length <= 160) {
+    return singleLine;
+  }
+
+  return `${singleLine.slice(0, 157)}...`;
 }
