@@ -11,6 +11,7 @@ describe("createProgram", () => {
       "sync",
       "status",
       "generate",
+      "init",
       "prompt"
     ]);
   });
