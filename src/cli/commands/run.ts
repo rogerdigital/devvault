@@ -22,6 +22,9 @@ export async function runAutomationCommand(): Promise<void> {
   if (assets.syncedSiteDirectory) {
     console.log(`Personal site: ${assets.syncedSiteDirectory}`);
   }
+  if (assets.siteCommit) {
+    console.log(`Personal site commit: ${assets.siteCommit}`);
+  }
 
   if (grouped.needs_action.length > 0) {
     console.log("");

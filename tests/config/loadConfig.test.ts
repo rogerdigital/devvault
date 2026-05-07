@@ -32,6 +32,13 @@ describe("parseDevVaultConfig", () => {
         sync_directory: "../site",
         contributions_path: "content/contributions.md",
         devlog_path: "content/devlog.md"
+      },
+      automation: {
+        site: {
+          commit: true,
+          push: false,
+          commit_message: "update site"
+        }
       }
     });
 
@@ -50,6 +57,13 @@ describe("parseDevVaultConfig", () => {
         syncDirectory: "../site",
         contributionsPath: "content/contributions.md",
         devlogPath: "content/devlog.md"
+      },
+      automation: {
+        site: {
+          commit: true,
+          push: false,
+          commitMessage: "update site"
+        }
       }
     });
   });

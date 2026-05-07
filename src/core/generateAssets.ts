@@ -1,4 +1,5 @@
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
 import { loadConfig } from "../config/loadConfig.js";
 import { generateChangelogMarkdown } from "../generators/changelog.js";
@@ -18,6 +19,7 @@ export type GeneratedAssetResult = {
   contributions: ContributionRecord[];
   outputDirectory: string;
   syncedSiteDirectory?: string;
+  siteCommit?: string;
   writtenFiles: string[];
 };
 
@@ -47,14 +49,22 @@ export async function generateAssets(cwd = process.cwd()): Promise<GeneratedAsse
     : undefined;
 
   if (syncedSiteDirectory) {
-    writtenFiles.push(
-      ...(await writeSiteOutputs({
-        config,
-        siteDirectory: syncedSiteDirectory,
-        pullRequests,
-        contributions
-      }))
-    );
+    const siteFiles = await writeSiteOutputs({
+      config,
+      siteDirectory: syncedSiteDirectory,
+      pullRequests,
+      contributions
+    });
+    writtenFiles.push(...siteFiles);
+    const siteCommit = commitSiteChangesIfConfigured(config, syncedSiteDirectory, siteFiles);
+
+    return {
+      contributions,
+      outputDirectory,
+      syncedSiteDirectory,
+      ...(siteCommit ? { siteCommit } : {}),
+      writtenFiles
+    };
   }
 
   return {
@@ -63,6 +73,50 @@ export async function generateAssets(cwd = process.cwd()): Promise<GeneratedAsse
     ...(syncedSiteDirectory ? { syncedSiteDirectory } : {}),
     writtenFiles
   };
+}
+
+function commitSiteChangesIfConfigured(
+  config: DevVaultConfig,
+  siteDirectory: string,
+  relativeFiles: string[]
+): string | undefined {
+  const automation = config.automation?.site;
+  if (!automation?.commit || relativeFiles.length === 0) {
+    return undefined;
+  }
+
+  execFileSync("git", ["add", ...relativeFiles], {
+    cwd: siteDirectory,
+    stdio: "ignore"
+  });
+
+  const status = execFileSync("git", ["status", "--short"], {
+    cwd: siteDirectory,
+    encoding: "utf8"
+  }).trim();
+
+  if (!status) {
+    return undefined;
+  }
+
+  execFileSync("git", ["commit", "-m", automation.commitMessage ?? "update DevVault contribution assets"], {
+    cwd: siteDirectory,
+    stdio: "ignore"
+  });
+
+  const commit = execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+    cwd: siteDirectory,
+    encoding: "utf8"
+  }).trim();
+
+  if (automation.push) {
+    execFileSync("git", ["push"], {
+      cwd: siteDirectory,
+      stdio: "ignore"
+    });
+  }
+
+  return commit;
 }
 
 async function writeStandardOutputs(options: {

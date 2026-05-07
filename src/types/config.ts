@@ -16,4 +16,11 @@ export type DevVaultConfig = {
     devlogPath?: string;
     blogDraftsDirectory?: string;
   };
+  automation?: {
+    site?: {
+      commit?: boolean;
+      push?: boolean;
+      commitMessage?: string;
+    };
+  };
 };

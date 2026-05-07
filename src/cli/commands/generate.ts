@@ -11,4 +11,7 @@ export async function runGenerateCommand(): Promise<void> {
   if (result.syncedSiteDirectory) {
     console.log(`Synced personal site content to ${result.syncedSiteDirectory}.`);
   }
+  if (result.siteCommit) {
+    console.log(`Committed personal site update: ${result.siteCommit}.`);
+  }
 }

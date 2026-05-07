@@ -44,6 +44,12 @@ function buildStarterConfig(options: InitCommandOptions): string {
     "  # contributions_path: src/content/devvault/contributions.md",
     "  # devlog_path: src/content/devvault/devlog.md",
     "  # blog_drafts_directory: src/content/devvault/blog-drafts",
+    "",
+    "automation:",
+    "  site:",
+    "    commit: false",
+    "    push: false",
+    "    commit_message: update DevVault contribution assets",
     ""
   ].join("\n");
 }

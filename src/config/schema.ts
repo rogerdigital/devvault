@@ -25,6 +25,14 @@ type RawDevVaultConfig = {
     blog_drafts_directory?: unknown;
     blogDraftsDirectory?: unknown;
   };
+  automation?: {
+    site?: {
+      commit?: unknown;
+      push?: unknown;
+      commit_message?: unknown;
+      commitMessage?: unknown;
+    };
+  };
 };
 
 export class ConfigValidationError extends Error {
@@ -51,6 +59,7 @@ export function parseDevVaultConfig(raw: unknown): DevVaultConfig {
   const repos = parseRepos(config.repos);
   const outputDirectory = optionalString(config.output?.directory) ?? "output";
   const site = parseSite(config.site);
+  const automation = parseAutomation(config.automation);
 
   return {
     github: {
@@ -61,7 +70,8 @@ export function parseDevVaultConfig(raw: unknown): DevVaultConfig {
     output: {
       directory: outputDirectory
     },
-    ...(site ? { site } : {})
+    ...(site ? { site } : {}),
+    ...(automation ? { automation } : {})
   };
 }
 
@@ -121,6 +131,40 @@ function parseSite(site: RawDevVaultConfig["site"]): DevVaultConfig["site"] | un
   };
 }
 
+function parseAutomation(
+  automation: RawDevVaultConfig["automation"]
+): DevVaultConfig["automation"] | undefined {
+  if (automation === undefined) {
+    return undefined;
+  }
+
+  if (!isRecord(automation)) {
+    throw new ConfigValidationError("automation must be an object when provided.");
+  }
+
+  const site = automation.site;
+  if (site === undefined) {
+    return undefined;
+  }
+
+  if (!isRecord(site)) {
+    throw new ConfigValidationError("automation.site must be an object when provided.");
+  }
+
+  const commit = optionalBoolean(site.commit) ?? false;
+  const push = optionalBoolean(site.push) ?? false;
+  const commitMessage =
+    optionalString(site.commit_message ?? site.commitMessage) ?? "update DevVault contribution assets";
+
+  return {
+    site: {
+      commit,
+      push,
+      commitMessage
+    }
+  };
+}
+
 function requiredString(value: unknown, field: string): string {
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new ConfigValidationError(`${field} must be a non-empty string.`);
@@ -140,6 +184,10 @@ function optionalString(value: unknown): string | undefined {
 
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function optionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
