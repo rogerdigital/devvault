@@ -53,6 +53,58 @@ describe("buildContributionRecord", () => {
     });
   });
 
+  it("ignores changelog files when inferring contribution area", () => {
+    const record = buildContributionRecord(
+      createPullRequest({
+        repo: "openclaw/openclaw",
+        number: 74224,
+        title: "fix(tui): resync streaming watchdog after reconnect",
+        state: "MERGED",
+        mergedAt: "2026-04-29T00:00:00Z",
+        changedFiles: ["CHANGELOG.md", "src/tui/tui-event-handlers.ts"]
+      })
+    );
+
+    expect(record).toMatchObject({
+      area: "TUI",
+      tags: ["open-source", "tui"]
+    });
+  });
+
+  it("does not classify browser fixes as infra because of words like forcing", () => {
+    const record = buildContributionRecord(
+      createPullRequest({
+        repo: "openclaw/openclaw",
+        number: 52451,
+        title: "fix(browser): stop forcing an extra blank tab on browser launch",
+        state: "MERGED",
+        mergedAt: "2026-03-22T00:00:00Z",
+        changedFiles: ["src/browser/browser-launch.ts"]
+      })
+    );
+
+    expect(record).toMatchObject({
+      area: "Browser",
+      type: "bugfix",
+      impact: "Stop forcing an extra blank tab on browser launch."
+    });
+  });
+
+  it("keeps WhatsApp casing when inferring area from paths", () => {
+    const record = buildContributionRecord(
+      createPullRequest({
+        repo: "openclaw/openclaw",
+        number: 64120,
+        title: "WhatsApp: add preflight audio transcription for DM voice notes",
+        state: "MERGED",
+        mergedAt: "2026-04-25T00:00:00Z",
+        changedFiles: ["extensions/whatsapp/src/auto-reply/monitor/on-message.ts"]
+      })
+    );
+
+    expect(record.area).toBe("WhatsApp");
+  });
+
   it("rejects unmerged PRs", () => {
     expect(() => buildContributionRecord(createPullRequest())).toThrow(
       "Cannot build contribution record"
@@ -71,6 +123,7 @@ describe("mergeContributionRecords", () => {
     });
     const existing = createContribution({
       id: "openclaw-openclaw-74224",
+      curated: true,
       area: "TUI reliability",
       impact: "Curated impact.",
       tags: ["curated"],
@@ -92,11 +145,35 @@ describe("mergeContributionRecords", () => {
         tags: ["curated"],
         resumeReady: false,
         homepageReady: false,
+        curated: true,
         manualNotes: "Keep this context.",
         links: {
           pr: "https://github.com/openclaw/openclaw/pull/74224",
           releaseNote: "https://example.com/release"
         }
+      }
+    ]);
+  });
+
+  it("refreshes generated fields when an existing record was not marked curated", () => {
+    const generated = createContribution({
+      id: "openclaw-openclaw-74224",
+      area: "Telegram",
+      impact: "Deduplicated MEDIA attachments.",
+      tags: ["telegram"]
+    });
+    const existing = createContribution({
+      id: "openclaw-openclaw-74224",
+      area: "CHANGELOG.md",
+      impact: "Old generated impact.",
+      tags: ["old"],
+      resumeReady: false
+    });
+
+    expect(mergeContributionRecords([existing], [generated])).toEqual([
+      {
+        ...generated,
+        resumeReady: false
       }
     ]);
   });

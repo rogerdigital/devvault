@@ -44,15 +44,13 @@ type PullRequestNode = {
 };
 
 type PullRequestsResponse = {
-  repository?: {
-    pullRequests: {
-      pageInfo: {
-        hasNextPage: boolean;
-        endCursor?: string | null;
-      };
-      nodes?: Array<PullRequestNode | null> | null;
+  search: {
+    pageInfo: {
+      hasNextPage: boolean;
+      endCursor?: string | null;
     };
-  } | null;
+    nodes?: Array<PullRequestNode | null> | null;
+  };
 };
 
 export async function fetchPullRequests(options: FetchPullRequestsOptions): Promise<PullRequestSnapshot[]> {
@@ -74,17 +72,12 @@ async function fetchPullRequestsForRepo(
 
   do {
     const response = await options.client.query<PullRequestsResponse>(PULL_REQUESTS_QUERY, {
-      owner: repo.owner,
-      name: repo.name,
-      author: options.username,
+      query: `repo:${repo.fullName} author:${options.username} is:pr`,
       pageSize: PAGE_SIZE,
       cursor
     });
 
-    const connection = response.repository?.pullRequests;
-    if (!connection) {
-      break;
-    }
+    const connection = response.search;
 
     for (const node of connection.nodes ?? []) {
       if (node) {
@@ -157,25 +150,17 @@ function normalizeCheckConclusion(node: PullRequestNode): PullRequestSnapshot["c
 
 const PULL_REQUESTS_QUERY = `
   query DevVaultPullRequests(
-    $owner: String!
-    $name: String!
-    $author: String!
+    $query: String!
     $pageSize: Int!
     $cursor: String
   ) {
-    repository(owner: $owner, name: $name) {
-      pullRequests(
-        first: $pageSize
-        after: $cursor
-        states: [OPEN, CLOSED, MERGED]
-        orderBy: { field: UPDATED_AT, direction: DESC }
-        author: $author
-      ) {
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-        nodes {
+    search(query: $query, type: ISSUE, first: $pageSize, after: $cursor) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        ... on PullRequest {
           id
           number
           title

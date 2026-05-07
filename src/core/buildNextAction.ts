@@ -77,9 +77,10 @@ function buildCiFailureReason(pr: PullRequestSnapshot): string {
   const failedChecks = pr.checkRuns
     ?.filter((check) => check.conclusion === "FAILURE")
     .map((check) => check.name);
+  const uniqueFailedChecks = Array.from(new Set(failedChecks));
 
-  if (failedChecks?.length) {
-    return `CI checks failed: ${failedChecks.join(", ")}.`;
+  if (uniqueFailedChecks.length) {
+    return `CI checks failed: ${uniqueFailedChecks.join(", ")}.`;
   }
 
   return "CI checks failed.";

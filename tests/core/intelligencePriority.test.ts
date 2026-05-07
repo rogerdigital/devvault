@@ -61,6 +61,28 @@ describe("PR intelligence priority", () => {
 
     expect(action.reason).toBe("CI checks failed: Test.");
   });
+
+  it("deduplicates repeated failed check names", () => {
+    const action = buildNextAction(
+      createPullRequest({
+        checkConclusion: "FAILURE",
+        checkRuns: [
+          {
+            name: "Real behavior proof",
+            status: "COMPLETED",
+            conclusion: "FAILURE"
+          },
+          {
+            name: "Real behavior proof",
+            status: "COMPLETED",
+            conclusion: "FAILURE"
+          }
+        ]
+      })
+    );
+
+    expect(action.reason).toBe("CI checks failed: Real behavior proof.");
+  });
 });
 
 function createPullRequest(overrides: Partial<PullRequestSnapshot> = {}): PullRequestSnapshot {

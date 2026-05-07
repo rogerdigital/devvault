@@ -17,5 +17,6 @@ export type ContributionRecord = {
   tags: string[];
   resumeReady: boolean;
   homepageReady: boolean;
+  curated?: boolean;
   manualNotes?: string;
 };

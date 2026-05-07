@@ -71,19 +71,19 @@ function inferContributionType(pr: PullRequestSnapshot): ContributionType {
     return "refactor";
   }
 
-  if (hasAny(haystack, ["ci", "build", "infra", "workflow"])) {
-    return "infra";
-  }
-
   if (hasAny(haystack, ["fix", "bug", "regression"])) {
     return "bugfix";
+  }
+
+  if (hasAny(haystack, ["ci", "build", "infra", "workflow"])) {
+    return "infra";
   }
 
   return "feature";
 }
 
 function inferContributionArea(pr: PullRequestSnapshot): string {
-  const firstPath = pr.changedFiles[0];
+  const firstPath = pr.changedFiles.find(isUsefulSourcePath);
   if (!firstPath) {
     return inferAreaFromTitle(pr.title) ?? "General";
   }
@@ -137,7 +137,8 @@ function titleCase(value: string): string {
     sdk: "SDK",
     stt: "STT",
     tui: "TUI",
-    ui: "UI"
+    ui: "UI",
+    whatsapp: "WhatsApp"
   };
 
   return value
@@ -188,6 +189,10 @@ function ensureSentence(value: string): string {
 }
 
 function inferTagsFromPath(filePath: string): string[] {
+  if (!isUsefulSourcePath(filePath)) {
+    return [];
+  }
+
   const [firstSegment, secondSegment] = filePath.split("/");
 
   if (firstSegment === "extensions" && secondSegment) {
@@ -203,4 +208,15 @@ function inferTagsFromPath(filePath: string): string[] {
   }
 
   return [];
+}
+
+function isUsefulSourcePath(filePath: string): boolean {
+  const ignoredFiles = new Set(["CHANGELOG.md", "README.md"]);
+  const ignoredPrefixes = [".github/", "docs/"];
+
+  if (ignoredFiles.has(filePath)) {
+    return false;
+  }
+
+  return !ignoredPrefixes.some((prefix) => filePath.startsWith(prefix));
 }

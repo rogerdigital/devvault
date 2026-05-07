@@ -4,9 +4,13 @@ const CURATED_FIELDS = [
   "type",
   "area",
   "impact",
-  "tags",
+  "tags"
+] as const;
+
+const USER_FIELDS = [
   "resumeReady",
   "homepageReady",
+  "curated",
   "manualNotes"
 ] as const;
 
@@ -38,7 +42,16 @@ export function mergeContributionRecord(
     }
   };
 
-  for (const field of CURATED_FIELDS) {
+  if (existing.curated) {
+    for (const field of CURATED_FIELDS) {
+      const value = existing[field];
+      if (value !== undefined) {
+        Object.assign(merged, { [field]: value });
+      }
+    }
+  }
+
+  for (const field of USER_FIELDS) {
     const value = existing[field];
     if (value !== undefined) {
       Object.assign(merged, { [field]: value });
