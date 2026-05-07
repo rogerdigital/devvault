@@ -40,6 +40,14 @@ function buildContributionId(pr: PullRequestSnapshot): string {
 
 function buildProjectName(repo: string): string {
   const name = repo.split("/")[1] ?? repo;
+  const knownNames: Record<string, string> = {
+    devvault: "DevVault",
+    openclaw: "OpenClaw"
+  };
+
+  if (knownNames[name.toLowerCase()]) {
+    return knownNames[name.toLowerCase()];
+  }
 
   return name
     .split(/[-_]/g)
@@ -77,25 +85,43 @@ function inferContributionType(pr: PullRequestSnapshot): ContributionType {
 function inferContributionArea(pr: PullRequestSnapshot): string {
   const firstPath = pr.changedFiles[0];
   if (!firstPath) {
-    return "General";
+    return inferAreaFromTitle(pr.title) ?? "General";
   }
 
-  const [firstSegment, secondSegment] = firstPath.split("/");
+  const [firstSegment, secondSegment, thirdSegment] = firstPath.split("/");
+
+  if (firstSegment === "extensions" && secondSegment) {
+    return titleCase(secondSegment);
+  }
 
   if (firstSegment === "packages" && secondSegment) {
     return titleCase(secondSegment);
+  }
+
+  if (firstSegment === "src" && secondSegment) {
+    return titleCase(thirdSegment && secondSegment === "config" ? "config" : secondSegment);
   }
 
   return titleCase(firstSegment);
 }
 
 function inferContributionImpact(pr: PullRequestSnapshot): string {
-  return pr.title.replace(/\.$/, ".");
+  const stripped = stripConventionalCommitPrefix(pr.title);
+  const withoutAreaPrefix = stripped.replace(/^[A-Z][A-Za-z0-9 -]{1,32}:\s+/, "");
+  const normalized = normalizeLeadingVerb(withoutAreaPrefix);
+
+  return ensureSentence(normalized);
 }
 
 function inferContributionTags(pr: PullRequestSnapshot): string[] {
+  const pathTags = pr.changedFiles.flatMap(inferTagsFromPath);
+
   return Array.from(
-    new Set(["open-source", ...pr.labels.map((label) => label.toLowerCase().replace(/\s+/g, "-"))])
+    new Set([
+      "open-source",
+      ...pathTags,
+      ...pr.labels.map((label) => label.toLowerCase().replace(/\s+/g, "-"))
+    ])
   ).sort((left, right) => left.localeCompare(right));
 }
 
@@ -104,9 +130,77 @@ function hasAny(value: string, needles: string[]): boolean {
 }
 
 function titleCase(value: string): string {
+  const acronyms: Record<string, string> = {
+    api: "API",
+    ci: "CI",
+    dm: "DM",
+    sdk: "SDK",
+    stt: "STT",
+    tui: "TUI",
+    ui: "UI"
+  };
+
   return value
     .split(/[-_]/g)
     .filter(Boolean)
-    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .map((part) => acronyms[part.toLowerCase()] ?? `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
     .join(" ");
+}
+
+function inferAreaFromTitle(title: string): string | undefined {
+  const match = /^(?:fix|feat|docs|test|refactor|chore|ci)\((?<scope>[^)]+)\):/i.exec(title);
+  return match?.groups?.scope ? titleCase(match.groups.scope) : undefined;
+}
+
+function stripConventionalCommitPrefix(title: string): string {
+  return title.replace(/^(fix|feat|docs|test|refactor|chore|ci)(\([^)]+\))?:\s*/i, "");
+}
+
+function normalizeLeadingVerb(value: string): string {
+  const trimmed = value.trim();
+  const replacements: Array<[RegExp, string]> = [
+    [/^add\b/i, "Added"],
+    [/^avoid\b/i, "Avoided"],
+    [/^bootstrap\b/i, "Bootstrapped"],
+    [/^clarify\b/i, "Clarified"],
+    [/^deduplicate\b/i, "Deduplicated"],
+    [/^prevent\b/i, "Prevented"],
+    [/^refresh\b/i, "Refreshed"],
+    [/^resync\b/i, "Resynced"]
+  ];
+
+  for (const [pattern, replacement] of replacements) {
+    if (pattern.test(trimmed)) {
+      return trimmed.replace(pattern, replacement);
+    }
+  }
+
+  return `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}`;
+}
+
+function ensureSentence(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "Improved project quality.";
+  }
+
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
+function inferTagsFromPath(filePath: string): string[] {
+  const [firstSegment, secondSegment] = filePath.split("/");
+
+  if (firstSegment === "extensions" && secondSegment) {
+    return [secondSegment.toLowerCase()];
+  }
+
+  if (firstSegment === "src" && secondSegment) {
+    return [secondSegment.toLowerCase()];
+  }
+
+  if (firstSegment === "packages" && secondSegment) {
+    return [secondSegment.toLowerCase()];
+  }
+
+  return [];
 }

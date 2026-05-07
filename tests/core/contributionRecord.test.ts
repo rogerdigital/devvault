@@ -21,14 +21,35 @@ describe("buildContributionRecord", () => {
 
     expect(record).toMatchObject({
       id: "openclaw-openclaw-74224",
-      project: "Openclaw",
+      project: "OpenClaw",
       repo: "openclaw/openclaw",
       pr: 74224,
       status: "merged",
       mergedAt: "2026-04-29T00:00:00Z",
       type: "bugfix",
-      area: "Tui",
+      area: "TUI",
       tags: ["bug", "open-source", "tui"]
+    });
+  });
+
+  it("infers useful metadata from real extension PR paths", () => {
+    const record = buildContributionRecord(
+      createPullRequest({
+        repo: "openclaw/openclaw",
+        number: 78420,
+        title: "fix(telegram): deduplicate MEDIA attachments in non-streaming mode",
+        state: "MERGED",
+        mergedAt: "2026-05-01T00:00:00Z",
+        changedFiles: ["extensions/telegram/src/bot-message-dispatch.ts"]
+      })
+    );
+
+    expect(record).toMatchObject({
+      project: "OpenClaw",
+      area: "Telegram",
+      impact: "Deduplicated MEDIA attachments in non-streaming mode.",
+      tags: ["open-source", "telegram"],
+      type: "bugfix"
     });
   });
 

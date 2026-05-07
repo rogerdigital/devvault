@@ -24,7 +24,7 @@ export function generateResumeSnippetsMarkdown(contributions: ContributionRecord
 }
 
 export function buildResumeBullet(record: ContributionRecord): string {
-  return `Contributed ${record.area} work to ${record.project} (#${record.pr}) by ${toSentenceCase(
+  return `Improved ${record.area} in ${record.project} (#${record.pr}): ${ensureSentence(
     record.impact
   )}`;
 }
@@ -47,11 +47,11 @@ function groupByProject(contributions: ContributionRecord[]): Map<string, Contri
   return grouped;
 }
 
-function toSentenceCase(value: string): string {
+function ensureSentence(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) {
-    return "improving project quality.";
+    return "Improved project quality.";
   }
 
-  return `${trimmed.charAt(0).toLowerCase()}${trimmed.slice(1).replace(/\.$/, "")}.`;
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
 }

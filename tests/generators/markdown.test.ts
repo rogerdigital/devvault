@@ -26,7 +26,7 @@ describe("markdown generators", () => {
       createContribution({ id: "hidden", pr: 1, resumeReady: false })
     ]);
 
-    expect(markdown).toContain("Contributed TUI reliability work to OpenClaw (#74224)");
+    expect(markdown).toContain("Improved TUI reliability in OpenClaw (#74224): Fixed reconnect.");
     expect(markdown).not.toContain("#1");
   });
 
