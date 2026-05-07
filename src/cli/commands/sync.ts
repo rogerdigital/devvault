@@ -1,5 +1,6 @@
 import { loadConfig } from "../../config/loadConfig.js";
-import { GitHubClient, readGitHubToken } from "../../github/client.js";
+import { resolveGitHubToken } from "../../github/auth.js";
+import { GitHubClient } from "../../github/client.js";
 import { fetchCheckRuns } from "../../github/fetchCheckRuns.js";
 import { fetchPullRequests } from "../../github/fetchPullRequests.js";
 import { fetchReviewComments } from "../../github/fetchReviewComments.js";
@@ -24,7 +25,7 @@ export type SyncPullRequestsResult = {
 
 export async function syncPullRequests(cwd = process.cwd()): Promise<SyncPullRequestsResult> {
   const config = await loadConfig({ cwd });
-  const token = readGitHubToken(config.github.tokenEnv);
+  const token = resolveGitHubToken({ tokenEnv: config.github.tokenEnv });
   const client = new GitHubClient({ token });
   const pullRequests = await fetchPullRequests({
     client,

@@ -78,13 +78,3 @@ export class GitHubClient {
     return payload.data;
   }
 }
-
-export function readGitHubToken(tokenEnv: string, env: NodeJS.ProcessEnv = process.env): string {
-  const token = env[tokenEnv];
-
-  if (!token?.trim()) {
-    throw new GitHubRequestError(`Environment variable ${tokenEnv} must contain a GitHub token.`);
-  }
-
-  return token;
-}
