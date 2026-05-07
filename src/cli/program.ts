@@ -1,5 +1,6 @@
 import { Command } from "commander";
 
+import { runDoctorCommand } from "./commands/doctor.js";
 import { runGenerateCommand } from "./commands/generate.js";
 import { runInitCommand } from "./commands/init.js";
 import { runPromptCommand } from "./commands/prompt.js";
@@ -20,6 +21,8 @@ export function createProgram(): Command {
   program.command("status").description("Show tracked pull request status.").action(runStatusCommand);
 
   program.command("generate").description("Generate contribution assets.").action(runGenerateCommand);
+
+  program.command("doctor").description("Check DevVault config, GitHub auth, and local paths.").action(runDoctorCommand);
 
   program
     .command("run")
