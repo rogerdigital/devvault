@@ -12,6 +12,7 @@ describe("createProgram", () => {
       "status",
       "generate",
       "doctor",
+      "curate",
       "run",
       "init",
       "prompt"
