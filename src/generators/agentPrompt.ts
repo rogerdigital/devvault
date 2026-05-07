@@ -5,6 +5,7 @@ export const PROMPT_TYPES = [
   "fix-ci",
   "address-review",
   "add-test",
+  "resolve-conflict",
   "maintainer-reply",
   "resume",
   "summary"
@@ -67,6 +68,16 @@ function buildTaskSection(type: AgentPromptType): string[] {
         "2. Add a focused test near existing related tests.",
         "3. Avoid public API changes unless required.",
         "4. Run the relevant test command.",
+        ""
+      ];
+    case "resolve-conflict":
+      return [
+        "Task:",
+        "1. Sync with the PR base branch and inspect merge conflicts.",
+        "2. Preserve the original intent of this PR.",
+        "3. Resolve conflicts with the smallest code change.",
+        "4. Run the relevant validation after resolving conflicts.",
+        "5. Summarize any behavior-sensitive conflict decisions.",
         ""
       ];
     case "maintainer-reply":

@@ -40,5 +40,5 @@ function formatStatusLine(classified: ClassifiedPullRequest): string {
   const { pr, status, action } = classified;
   const prefix = `- ${pr.repo} #${pr.number}`;
 
-  return `${prefix} [${status}] ${pr.title} | Reason: ${action.reason} | Next: ${action.next}`;
+  return `${prefix} [${status}/${action.kind}] ${pr.title} | Reason: ${action.reason} | Next: ${action.next}`;
 }

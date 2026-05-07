@@ -15,6 +15,7 @@ describe("PR intelligence priority", () => {
     expect(classifyPrStatus(pr)).toBe("merge_conflict");
     expect(buildNextAction(pr)).toMatchObject({
       group: "needs_action",
+      kind: "resolve_conflict",
       reason: "Pull request has merge conflicts."
     });
   });
@@ -37,6 +38,7 @@ describe("PR intelligence priority", () => {
     });
 
     expect(classifyPrStatus(pr)).toBe("changes_requested");
+    expect(buildNextAction(pr).kind).toBe("address_review");
     expect(buildNextAction(pr).next).toContain("Please add a regression test");
   });
 
@@ -60,6 +62,7 @@ describe("PR intelligence priority", () => {
     );
 
     expect(action.reason).toBe("CI checks failed: Test.");
+    expect(action.kind).toBe("fix_ci");
   });
 
   it("deduplicates repeated failed check names", () => {

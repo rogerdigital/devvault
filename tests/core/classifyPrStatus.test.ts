@@ -40,13 +40,15 @@ describe("buildNextAction", () => {
   it("marks failed CI as needs action", () => {
     expect(buildNextAction(createPullRequest({ checkConclusion: "FAILURE" }))).toMatchObject({
       group: "needs_action",
+      kind: "fix_ci",
       reason: "CI checks failed."
     });
   });
 
   it("marks merged PRs as merged", () => {
     expect(buildNextAction(createPullRequest({ state: "MERGED" }))).toMatchObject({
-      group: "merged"
+      group: "merged",
+      kind: "curate_contribution"
     });
   });
 });

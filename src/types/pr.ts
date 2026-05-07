@@ -46,8 +46,19 @@ export type PrLifecycleStatus =
 
 export type PrStatusGroup = "needs_action" | "waiting" | "merged" | "closed";
 
+export type PrActionKind =
+  | "fix_ci"
+  | "address_review"
+  | "reply_maintainer"
+  | "resolve_conflict"
+  | "curate_contribution"
+  | "wait_review"
+  | "wait_merge"
+  | "none";
+
 export type NextAction = {
   group: PrStatusGroup;
+  kind: PrActionKind;
   reason: string;
   next: string;
 };

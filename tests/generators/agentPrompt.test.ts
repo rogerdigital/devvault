@@ -20,6 +20,7 @@ describe("parsePullRequestRef", () => {
 describe("isAgentPromptType", () => {
   it("accepts known prompt types", () => {
     expect(isAgentPromptType("fix-ci")).toBe(true);
+    expect(isAgentPromptType("resolve-conflict")).toBe(true);
     expect(isAgentPromptType("resume")).toBe(true);
   });
 
@@ -42,6 +43,16 @@ describe("generateAgentPrompt", () => {
     const prompt = generateAgentPrompt(createPullRequest({ state: "MERGED" }), "resume");
 
     expect(prompt).toContain("Write a resume-ready bullet");
+  });
+
+  it("generates a conflict resolution prompt", () => {
+    const prompt = generateAgentPrompt(
+      createPullRequest({ mergeable: "CONFLICTING" }),
+      "resolve-conflict"
+    );
+
+    expect(prompt).toContain("Pull request has merge conflicts.");
+    expect(prompt).toContain("Preserve the original intent");
   });
 });
 
