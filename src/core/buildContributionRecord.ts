@@ -106,6 +106,11 @@ function inferContributionArea(pr: PullRequestSnapshot): string {
 }
 
 function inferContributionImpact(pr: PullRequestSnapshot): string {
+  const bodyImpact = inferImpactFromBody(pr.body);
+  if (bodyImpact) {
+    return bodyImpact;
+  }
+
   const stripped = stripConventionalCommitPrefix(pr.title);
   const withoutAreaPrefix = stripped.replace(/^[A-Z][A-Za-z0-9 -]{1,32}:\s+/, "");
   const normalized = normalizeLeadingVerb(withoutAreaPrefix);
@@ -151,6 +156,53 @@ function titleCase(value: string): string {
 function inferAreaFromTitle(title: string): string | undefined {
   const match = /^(?:fix|feat|docs|test|refactor|chore|ci)\((?<scope>[^)]+)\):/i.exec(title);
   return match?.groups?.scope ? titleCase(match.groups.scope) : undefined;
+}
+
+function inferImpactFromBody(body: string | undefined): string | undefined {
+  if (!body) {
+    return undefined;
+  }
+
+  const section = extractSection(body, ["summary", "what changed", "changes"]);
+  const candidate = section
+    .split("\n")
+    .map((line) => line.trim())
+    .find((line) => /^[-*]\s+\S/.test(line));
+
+  if (!candidate) {
+    return undefined;
+  }
+
+  const cleaned = candidate
+    .replace(/^[-*]\s+/, "")
+    .replace(/`/g, "")
+    .trim();
+
+  if (cleaned.length < 12) {
+    return undefined;
+  }
+
+  return ensureSentence(normalizeLeadingVerb(cleaned));
+}
+
+function extractSection(body: string, headings: string[]): string {
+  const lines = body.split(/\r?\n/);
+  let start = -1;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const normalizedHeading = lines[index]?.replace(/^#+\s*/, "").trim().toLowerCase();
+    if (normalizedHeading && headings.includes(normalizedHeading)) {
+      start = index + 1;
+      break;
+    }
+  }
+
+  if (start === -1) {
+    return body;
+  }
+
+  const end = lines.findIndex((line, index) => index > start && /^##+\s+/.test(line));
+  return lines.slice(start, end === -1 ? undefined : end).join("\n");
 }
 
 function stripConventionalCommitPrefix(title: string): string {

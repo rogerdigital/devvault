@@ -90,6 +90,26 @@ describe("buildContributionRecord", () => {
     });
   });
 
+  it("uses PR body summary bullets before falling back to the title", () => {
+    const record = buildContributionRecord(
+      createPullRequest({
+        title: "fix(tui): resync streaming watchdog after reconnect",
+        body: [
+          "## Summary",
+          "- treat active-run tool and non-terminal lifecycle events as streaming watchdog proof-of-life",
+          "- pause the watchdog while disconnected"
+        ].join("\n"),
+        state: "MERGED",
+        mergedAt: "2026-04-29T00:00:00Z",
+        changedFiles: ["src/tui/tui-event-handlers.ts"]
+      })
+    );
+
+    expect(record.impact).toBe(
+      "Treat active-run tool and non-terminal lifecycle events as streaming watchdog proof-of-life."
+    );
+  });
+
   it("keeps WhatsApp casing when inferring area from paths", () => {
     const record = buildContributionRecord(
       createPullRequest({
