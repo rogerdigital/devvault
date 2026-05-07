@@ -10,5 +10,10 @@ export type DevVaultConfig = {
   site?: {
     ownerName?: string;
     tagline?: string;
+    syncDirectory?: string;
+    indexPath?: string;
+    contributionsPath?: string;
+    devlogPath?: string;
+    blogDraftsDirectory?: string;
   };
 };

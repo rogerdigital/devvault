@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { runGenerateCommand } from "./commands/generate.js";
 import { runInitCommand } from "./commands/init.js";
 import { runPromptCommand } from "./commands/prompt.js";
+import { runAutomationCommand } from "./commands/run.js";
 import { runStatusCommand } from "./commands/status.js";
 import { runSyncCommand } from "./commands/sync.js";
 
@@ -19,6 +20,11 @@ export function createProgram(): Command {
   program.command("status").description("Show tracked pull request status.").action(runStatusCommand);
 
   program.command("generate").description("Generate contribution assets.").action(runGenerateCommand);
+
+  program
+    .command("run")
+    .description("Sync PRs, update contribution assets, and sync configured personal site content.")
+    .action(runAutomationCommand);
 
   program
     .command("init")

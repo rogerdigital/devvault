@@ -38,6 +38,12 @@ function buildStarterConfig(options: InitCommandOptions): string {
     "site:",
     `  owner_name: ${username}`,
     "  tagline: Open-source Contributor",
+    "  # Uncomment these paths to let devvault run sync Markdown into your personal site repo.",
+    "  # sync_directory: ../rogerdigital.github.io",
+    "  # index_path: src/content/devvault/index.md",
+    "  # contributions_path: src/content/devvault/contributions.md",
+    "  # devlog_path: src/content/devvault/devlog.md",
+    "  # blog_drafts_directory: src/content/devvault/blog-drafts",
     ""
   ].join("\n");
 }

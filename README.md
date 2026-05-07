@@ -329,9 +329,33 @@ output:
 site:
   owner_name: Roger Deng
   tagline: iOS Engineer | AI-native Builder | Open-source Contributor
+  # Optional: enable automatic personal site Markdown sync.
+  # sync_directory: ../rogerdigital.github.io
+  # index_path: src/content/devvault/index.md
+  # contributions_path: src/content/devvault/contributions.md
+  # devlog_path: src/content/devvault/devlog.md
+  # blog_drafts_directory: src/content/devvault/blog-drafts
 ```
 
 ### Run the workflow
+
+Daily automatic workflow:
+
+```bash
+GITHUB_TOKEN=$(gh auth token) node dist/cli/index.js run
+```
+
+This single command:
+
+- syncs GitHub PR data
+- classifies PRs into action groups
+- updates the contribution ledger
+- regenerates local Markdown assets
+- writes `output/devlog.md`
+- syncs configured personal site Markdown files when `site.sync_directory` is set
+- prints PRs that need action and the prompt command to run next
+
+Manual commands remain available when you want one specific step.
 
 Fetch PR snapshots:
 
@@ -345,26 +369,17 @@ Inspect current state:
 pnpm dev -- status
 ```
 
-Generate contribution assets:
+Generate contribution assets without syncing PRs first:
 
 ```bash
 pnpm dev -- generate
 ```
 
-Generate an agent handoff prompt:
+Generate an agent handoff prompt for a PR that needs action:
 
 ```bash
 pnpm dev -- prompt --pr openclaw/openclaw#74224 --type fix-ci
 ```
-
-Supported prompt types:
-
-- `fix-ci`
-- `address-review`
-- `add-test`
-- `maintainer-reply`
-- `resume`
-- `summary`
 
 ### Verify locally
 
@@ -378,7 +393,8 @@ pnpm lint
 
 - `sync` calls GitHub live and requires network access.
 - Generated contribution impact text starts from PR metadata and is designed to be manually curated in `data/contributions.json`.
-- Personal website sync is Markdown output only. It does not modify an external website repository yet.
+- Personal website sync writes Markdown files only. It does not commit or push the website repository.
+- Branch management is intentionally non-destructive. DevVault reports PR action state and generated prompts, but does not delete, rebase, or force-push branches.
 
 ## Data Model
 

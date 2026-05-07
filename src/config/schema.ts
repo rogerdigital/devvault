@@ -14,6 +14,16 @@ type RawDevVaultConfig = {
     owner_name?: unknown;
     ownerName?: unknown;
     tagline?: unknown;
+    sync_directory?: unknown;
+    syncDirectory?: unknown;
+    index_path?: unknown;
+    indexPath?: unknown;
+    contributions_path?: unknown;
+    contributionsPath?: unknown;
+    devlog_path?: unknown;
+    devlogPath?: unknown;
+    blog_drafts_directory?: unknown;
+    blogDraftsDirectory?: unknown;
   };
 };
 
@@ -82,14 +92,32 @@ function parseSite(site: RawDevVaultConfig["site"]): DevVaultConfig["site"] | un
 
   const ownerName = optionalString(site.owner_name ?? site.ownerName);
   const tagline = optionalString(site.tagline);
+  const syncDirectory = optionalString(site.sync_directory ?? site.syncDirectory);
+  const indexPath = optionalString(site.index_path ?? site.indexPath);
+  const contributionsPath = optionalString(site.contributions_path ?? site.contributionsPath);
+  const devlogPath = optionalString(site.devlog_path ?? site.devlogPath);
+  const blogDraftsDirectory = optionalString(site.blog_drafts_directory ?? site.blogDraftsDirectory);
 
-  if (!ownerName && !tagline) {
+  if (
+    !ownerName &&
+    !tagline &&
+    !syncDirectory &&
+    !indexPath &&
+    !contributionsPath &&
+    !devlogPath &&
+    !blogDraftsDirectory
+  ) {
     return undefined;
   }
 
   return {
     ...(ownerName ? { ownerName } : {}),
-    ...(tagline ? { tagline } : {})
+    ...(tagline ? { tagline } : {}),
+    ...(syncDirectory ? { syncDirectory } : {}),
+    ...(indexPath ? { indexPath } : {}),
+    ...(contributionsPath ? { contributionsPath } : {}),
+    ...(devlogPath ? { devlogPath } : {}),
+    ...(blogDraftsDirectory ? { blogDraftsDirectory } : {})
   };
 }
 

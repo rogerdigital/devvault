@@ -28,7 +28,10 @@ describe("parseDevVaultConfig", () => {
       },
       site: {
         owner_name: "Roger Deng",
-        tagline: "Builder"
+        tagline: "Builder",
+        sync_directory: "../site",
+        contributions_path: "content/contributions.md",
+        devlog_path: "content/devlog.md"
       }
     });
 
@@ -43,7 +46,10 @@ describe("parseDevVaultConfig", () => {
       },
       site: {
         ownerName: "Roger Deng",
-        tagline: "Builder"
+        tagline: "Builder",
+        syncDirectory: "../site",
+        contributionsPath: "content/contributions.md",
+        devlogPath: "content/devlog.md"
       }
     });
   });

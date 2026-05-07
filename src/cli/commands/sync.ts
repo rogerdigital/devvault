@@ -7,7 +7,23 @@ import { createStore } from "../../storage/store.js";
 import type { PullRequestSnapshot } from "../../types/pr.js";
 
 export async function runSyncCommand(): Promise<void> {
-  const config = await loadConfig();
+  const result = await syncPullRequests();
+
+  console.log(`Synced ${result.pullRequests.length} pull requests.`);
+  console.log(`Open: ${result.openCount}`);
+  console.log(`Merged: ${result.mergedCount}`);
+  console.log(`Closed: ${result.closedCount}`);
+}
+
+export type SyncPullRequestsResult = {
+  pullRequests: PullRequestSnapshot[];
+  openCount: number;
+  mergedCount: number;
+  closedCount: number;
+};
+
+export async function syncPullRequests(cwd = process.cwd()): Promise<SyncPullRequestsResult> {
+  const config = await loadConfig({ cwd });
   const token = readGitHubToken(config.github.tokenEnv);
   const client = new GitHubClient({ token });
   const pullRequests = await fetchPullRequests({
@@ -17,16 +33,18 @@ export async function runSyncCommand(): Promise<void> {
   });
   const enrichedPullRequests = await enrichPullRequests(client, pullRequests);
 
-  await createStore().writePullRequests(enrichedPullRequests);
+  await createStore(cwd).writePullRequests(enrichedPullRequests);
 
   const mergedCount = enrichedPullRequests.filter((pr) => pr.state === "MERGED").length;
   const openCount = enrichedPullRequests.filter((pr) => pr.state === "OPEN").length;
   const closedCount = enrichedPullRequests.filter((pr) => pr.state === "CLOSED").length;
 
-  console.log(`Synced ${enrichedPullRequests.length} pull requests.`);
-  console.log(`Open: ${openCount}`);
-  console.log(`Merged: ${mergedCount}`);
-  console.log(`Closed: ${closedCount}`);
+  return {
+    pullRequests: enrichedPullRequests,
+    openCount,
+    mergedCount,
+    closedCount
+  };
 }
 
 async function enrichPullRequests(
