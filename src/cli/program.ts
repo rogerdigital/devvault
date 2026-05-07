@@ -1,5 +1,6 @@
 import { Command } from "commander";
 
+import { runBranchesCommand } from "./commands/branches.js";
 import { runCurateCommand } from "./commands/curate.js";
 import { runDoctorCommand } from "./commands/doctor.js";
 import { runGenerateCommand } from "./commands/generate.js";
@@ -42,6 +43,13 @@ export function createProgram(): Command {
     .option("--repo <repo>", "Repository to track. Can be provided more than once.", collectValues, [])
     .option("--token-env <name>", "Environment variable containing the GitHub token.")
     .action(runInitCommand);
+
+  program
+    .command("branches")
+    .description("Suggest safe local branch cleanup from synced PR data.")
+    .option("--repo-path <path>", "Local repository path to inspect.")
+    .option("--prune", "Delete branches only when linked merged PRs are safe to delete.")
+    .action(runBranchesCommand);
 
   program
     .command("prompt")

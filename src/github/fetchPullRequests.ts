@@ -26,6 +26,10 @@ type PullRequestNode = {
   author?: {
     login: string;
   } | null;
+  headRefName?: string | null;
+  headRepository?: {
+    nameWithOwner: string;
+  } | null;
   labels?: {
     nodes?: Array<{ name: string } | null> | null;
   } | null;
@@ -103,6 +107,8 @@ export function normalizePullRequestNode(repo: string, node: PullRequestNode): P
     ...(node.bodyText ? { body: node.bodyText } : {}),
     url: node.url,
     author: node.author?.login ?? "unknown",
+    ...(node.headRefName ? { headRefName: node.headRefName } : {}),
+    ...(node.headRepository?.nameWithOwner ? { headRepository: node.headRepository.nameWithOwner } : {}),
     state: node.state,
     isDraft: node.isDraft,
     createdAt: node.createdAt,
@@ -175,6 +181,10 @@ const PULL_REQUESTS_QUERY = `
           reviewDecision
           author {
             login
+          }
+          headRefName
+          headRepository {
+            nameWithOwner
           }
           labels(first: 20) {
             nodes {

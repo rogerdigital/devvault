@@ -15,6 +15,8 @@ export type PullRequestSnapshot = {
   body?: string;
   url: string;
   author: string;
+  headRefName?: string;
+  headRepository?: string;
   state: GitHubPullRequestState;
   isDraft: boolean;
   createdAt: string;

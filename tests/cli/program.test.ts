@@ -15,6 +15,7 @@ describe("createProgram", () => {
       "curate",
       "run",
       "init",
+      "branches",
       "prompt"
     ]);
   });
