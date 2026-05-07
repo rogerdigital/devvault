@@ -7,6 +7,7 @@ type RawDevVaultConfig = {
     tokenEnv?: unknown;
   };
   repos?: unknown;
+  projects?: unknown;
   output?: {
     directory?: unknown;
   };
@@ -56,10 +57,15 @@ export function parseDevVaultConfig(raw: unknown): DevVaultConfig {
 
   const username = requiredString(github.username, "github.username");
   const tokenEnv = requiredString(github.token_env ?? github.tokenEnv, "github.token_env");
-  const repos = parseRepos(config.repos);
+  const projects = parseProjects(config.projects);
+  const repos = mergeRepos(parseRepos(config.repos, "repos", { allowEmpty: true }), projects);
   const outputDirectory = optionalString(config.output?.directory) ?? "output";
   const site = parseSite(config.site);
   const automation = parseAutomation(config.automation);
+
+  if (repos.length === 0) {
+    throw new ConfigValidationError("Config must include at least one repo or project repo.");
+  }
 
   return {
     github: {
@@ -67,6 +73,7 @@ export function parseDevVaultConfig(raw: unknown): DevVaultConfig {
       tokenEnv
     },
     repos,
+    ...(projects.length ? { projects } : {}),
     output: {
       directory: outputDirectory
     },
@@ -75,13 +82,21 @@ export function parseDevVaultConfig(raw: unknown): DevVaultConfig {
   };
 }
 
-function parseRepos(value: unknown): string[] {
-  if (!Array.isArray(value) || value.length === 0) {
-    throw new ConfigValidationError("Config must include at least one repo.");
+function parseRepos(
+  value: unknown,
+  field: string,
+  options: { allowEmpty?: boolean } = {}
+): string[] {
+  if (value === undefined && options.allowEmpty) {
+    return [];
+  }
+
+  if (!Array.isArray(value) || (!options.allowEmpty && value.length === 0)) {
+    throw new ConfigValidationError(`${field} must include at least one repo.`);
   }
 
   return value.map((repo, index) => {
-    const parsed = requiredString(repo, `repos[${index}]`);
+    const parsed = requiredString(repo, `${field}[${index}]`);
 
     if (!/^[^/\s]+\/[^/\s]+$/.test(parsed)) {
       throw new ConfigValidationError(`Invalid repo "${parsed}". Expected owner/name.`);
@@ -89,6 +104,39 @@ function parseRepos(value: unknown): string[] {
 
     return parsed;
   });
+}
+
+function parseProjects(value: unknown): NonNullable<DevVaultConfig["projects"]> {
+  if (value === undefined) {
+    return [];
+  }
+
+  if (!Array.isArray(value)) {
+    throw new ConfigValidationError("projects must be an array when provided.");
+  }
+
+  return value.map((project, index) => {
+    if (!isRecord(project)) {
+      throw new ConfigValidationError(`projects[${index}] must be an object.`);
+    }
+
+    const name = requiredString(project.name, `projects[${index}].name`);
+    const repos = parseRepos(project.repos, `projects[${index}].repos`);
+    const siteSection = optionalString(project.site_section ?? project.siteSection);
+
+    return {
+      name,
+      repos,
+      ...(siteSection ? { siteSection } : {})
+    };
+  });
+}
+
+function mergeRepos(
+  repos: string[],
+  projects: NonNullable<DevVaultConfig["projects"]>
+): string[] {
+  return Array.from(new Set([...repos, ...projects.flatMap((project) => project.repos)]));
 }
 
 function parseSite(site: RawDevVaultConfig["site"]): DevVaultConfig["site"] | undefined {

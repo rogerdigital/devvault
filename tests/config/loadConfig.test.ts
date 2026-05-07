@@ -23,6 +23,13 @@ describe("parseDevVaultConfig", () => {
         token_env: "GITHUB_TOKEN"
       },
       repos: ["openclaw/openclaw"],
+      projects: [
+        {
+          name: "Dev Tools",
+          repos: ["rogerdigital/devvault"],
+          site_section: "projects"
+        }
+      ],
       output: {
         directory: "generated"
       },
@@ -47,7 +54,14 @@ describe("parseDevVaultConfig", () => {
         username: "rogerdigital",
         tokenEnv: "GITHUB_TOKEN"
       },
-      repos: ["openclaw/openclaw"],
+      repos: ["openclaw/openclaw", "rogerdigital/devvault"],
+      projects: [
+        {
+          name: "Dev Tools",
+          repos: ["rogerdigital/devvault"],
+          siteSection: "projects"
+        }
+      ],
       output: {
         directory: "generated"
       },
@@ -78,6 +92,29 @@ describe("parseDevVaultConfig", () => {
         repos: ["openclaw"]
       })
     ).toThrow(ConfigValidationError);
+  });
+
+  it("accepts project-only repo configuration", () => {
+    const config = parseDevVaultConfig({
+      github: {
+        username: "rogerdigital",
+        token_env: "GITHUB_TOKEN"
+      },
+      projects: [
+        {
+          name: "OpenClaw",
+          repos: ["openclaw/openclaw"]
+        }
+      ]
+    });
+
+    expect(config.repos).toEqual(["openclaw/openclaw"]);
+    expect(config.projects).toEqual([
+      {
+        name: "OpenClaw",
+        repos: ["openclaw/openclaw"]
+      }
+    ]);
   });
 });
 

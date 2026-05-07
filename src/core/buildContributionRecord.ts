@@ -1,18 +1,25 @@
 import type { ContributionRecord, ContributionType } from "../types/contribution.js";
+import type { DevVaultConfig } from "../types/config.js";
 import type { PullRequestSnapshot } from "../types/pr.js";
 
-export function buildContributionRecords(prs: PullRequestSnapshot[]): ContributionRecord[] {
-  return prs.filter(isMergedPullRequest).map(buildContributionRecord);
+export function buildContributionRecords(
+  prs: PullRequestSnapshot[],
+  config?: Pick<DevVaultConfig, "projects">
+): ContributionRecord[] {
+  return prs.filter(isMergedPullRequest).map((pr) => buildContributionRecord(pr, config));
 }
 
-export function buildContributionRecord(pr: PullRequestSnapshot): ContributionRecord {
+export function buildContributionRecord(
+  pr: PullRequestSnapshot,
+  config?: Pick<DevVaultConfig, "projects">
+): ContributionRecord {
   if (!isMergedPullRequest(pr)) {
     throw new Error(`Cannot build contribution record for unmerged PR ${pr.repo}#${pr.number}.`);
   }
 
   return {
     id: buildContributionId(pr),
-    project: buildProjectName(pr.repo),
+    project: buildProjectName(pr.repo, config),
     repo: pr.repo,
     pr: pr.number,
     status: "merged",
@@ -38,7 +45,12 @@ function buildContributionId(pr: PullRequestSnapshot): string {
   return `${repoSlug}-${pr.number}`;
 }
 
-function buildProjectName(repo: string): string {
+function buildProjectName(repo: string, config?: Pick<DevVaultConfig, "projects">): string {
+  const configuredProject = config?.projects?.find((project) => project.repos.includes(repo));
+  if (configuredProject) {
+    return configuredProject.name;
+  }
+
   const name = repo.split("/")[1] ?? repo;
   const knownNames: Record<string, string> = {
     devvault: "DevVault",

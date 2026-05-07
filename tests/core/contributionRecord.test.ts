@@ -125,6 +125,28 @@ describe("buildContributionRecord", () => {
     expect(record.area).toBe("WhatsApp");
   });
 
+  it("uses configured project names for grouped repositories", () => {
+    const record = buildContributionRecord(
+      createPullRequest({
+        repo: "rogerdigital/devvault",
+        number: 18,
+        title: "feat: add automated reports",
+        state: "MERGED",
+        mergedAt: "2026-05-07T00:00:00Z"
+      }),
+      {
+        projects: [
+          {
+            name: "Personal Contribution Engine",
+            repos: ["rogerdigital/devvault"]
+          }
+        ]
+      }
+    );
+
+    expect(record.project).toBe("Personal Contribution Engine");
+  });
+
   it("rejects unmerged PRs", () => {
     expect(() => buildContributionRecord(createPullRequest())).toThrow(
       "Cannot build contribution record"
