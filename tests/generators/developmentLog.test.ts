@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { generateDevelopmentLogMarkdown } from "../../src/generators/developmentLog.js";
+import {
+  generateDevelopmentLogMarkdown,
+  updateDevelopmentLogMarkdown
+} from "../../src/generators/developmentLog.js";
 import type { ContributionRecord } from "../../src/types/contribution.js";
 import type { PullRequestSnapshot } from "../../src/types/pr.js";
 
@@ -13,10 +16,49 @@ describe("generateDevelopmentLogMarkdown", () => {
     );
 
     expect(markdown).toContain("Generated at: 2026-05-07T00:00:00.000Z");
-    expect(markdown).toContain("## Needs Action");
+    expect(markdown).toContain("## 2026-05-07");
+    expect(markdown).toContain("### Needs Action");
     expect(markdown).toContain("CI checks failed.");
-    expect(markdown).toContain("## Recent Merged Contributions");
+    expect(markdown).toContain("### Recent Merged Contributions");
     expect(markdown).toContain("OpenClaw #74224: TUI | Resynced watchdog.");
+  });
+
+  it("prepends a new daily entry while preserving previous days", () => {
+    const existing = generateDevelopmentLogMarkdown(
+      [createPullRequest({ number: 1, title: "Older PR" })],
+      [],
+      new Date("2026-05-06T00:00:00Z")
+    );
+
+    const updated = updateDevelopmentLogMarkdown(
+      existing,
+      [createPullRequest({ number: 2, title: "Current PR" })],
+      [createContribution()],
+      new Date("2026-05-07T00:00:00Z")
+    );
+
+    expect(updated.indexOf("## 2026-05-07")).toBeLessThan(updated.indexOf("## 2026-05-06"));
+    expect(updated).toContain("Current PR");
+    expect(updated).toContain("Older PR");
+  });
+
+  it("replaces the current daily entry instead of duplicating it", () => {
+    const existing = generateDevelopmentLogMarkdown(
+      [createPullRequest({ number: 1, title: "Old same-day PR" })],
+      [],
+      new Date("2026-05-07T00:00:00Z")
+    );
+
+    const updated = updateDevelopmentLogMarkdown(
+      existing,
+      [createPullRequest({ number: 2, title: "Updated same-day PR" })],
+      [],
+      new Date("2026-05-07T12:00:00Z")
+    );
+
+    expect(updated.match(/## 2026-05-07/g)).toHaveLength(1);
+    expect(updated).toContain("Updated same-day PR");
+    expect(updated).not.toContain("Old same-day PR");
   });
 });
 

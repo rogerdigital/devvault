@@ -7,13 +7,47 @@ export function generateDevelopmentLogMarkdown(
   contributions: ContributionRecord[],
   generatedAt = new Date()
 ): string {
+  return ["# Development Log", "", generateDevelopmentLogEntry(pullRequests, contributions, generatedAt)].join(
+    "\n"
+  );
+}
+
+export function updateDevelopmentLogMarkdown(
+  existingMarkdown: string | undefined,
+  pullRequests: PullRequestSnapshot[],
+  contributions: ContributionRecord[],
+  generatedAt = new Date()
+): string {
+  const entry = generateDevelopmentLogEntry(pullRequests, contributions, generatedAt);
+  const dateKey = formatDateKey(generatedAt);
+  const existing = existingMarkdown?.trim();
+
+  if (!existing) {
+    return generateDevelopmentLogMarkdown(pullRequests, contributions, generatedAt);
+  }
+
+  const withoutExistingEntry = removeDateEntry(existing, dateKey);
+  const body = withoutExistingEntry.replace(/^# Development Log\s*/, "").trim();
+
+  if (!body) {
+    return ["# Development Log", "", entry, ""].join("\n");
+  }
+
+  return ["# Development Log", "", entry, "", body, ""].join("\n");
+}
+
+export function generateDevelopmentLogEntry(
+  pullRequests: PullRequestSnapshot[],
+  contributions: ContributionRecord[],
+  generatedAt = new Date()
+): string {
   const grouped = groupPullRequests(pullRequests);
   const lines = [
-    "# Development Log",
+    `## ${formatDateKey(generatedAt)}`,
     "",
     `Generated at: ${generatedAt.toISOString()}`,
     "",
-    "## Needs Action",
+    "### Needs Action",
     ""
   ];
 
@@ -27,7 +61,7 @@ export function generateDevelopmentLogMarkdown(
     }
   }
 
-  lines.push("", "## Waiting", "");
+  lines.push("", "### Waiting", "");
   if (grouped.waiting.length === 0) {
     lines.push("- None");
   } else {
@@ -36,7 +70,7 @@ export function generateDevelopmentLogMarkdown(
     }
   }
 
-  lines.push("", "## Recent Merged Contributions", "");
+  lines.push("", "### Recent Merged Contributions", "");
   if (contributions.length === 0) {
     lines.push("- None");
   } else {
@@ -49,4 +83,17 @@ export function generateDevelopmentLogMarkdown(
 
   lines.push("");
   return lines.join("\n");
+}
+
+function removeDateEntry(markdown: string, dateKey: string): string {
+  const pattern = new RegExp(`(^|\\n)## ${escapeRegExp(dateKey)}\\n[\\s\\S]*?(?=\\n## \\d{4}-\\d{2}-\\d{2}\\n|$)`);
+  return markdown.replace(pattern, "$1").trim();
+}
+
+function formatDateKey(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

@@ -1,10 +1,11 @@
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { readFile } from "node:fs/promises";
 
 import { loadConfig } from "../config/loadConfig.js";
 import { generateChangelogMarkdown } from "../generators/changelog.js";
 import { generateContributionMarkdown } from "../generators/contributionMarkdown.js";
-import { generateDevelopmentLogMarkdown } from "../generators/developmentLog.js";
+import { updateDevelopmentLogMarkdown } from "../generators/developmentLog.js";
 import { generateResumeSnippetsMarkdown } from "../generators/resumeBullet.js";
 import { generateWebsiteMarkdown } from "../generators/websiteContent.js";
 import { createStore } from "../storage/store.js";
@@ -127,6 +128,12 @@ async function writeStandardOutputs(options: {
   contributions: ContributionRecord[];
 }): Promise<string[]> {
   const website = generateWebsiteMarkdown(options.contributions, options.config);
+  const devlogPath = path.join(options.outputDirectory, "devlog.md");
+  const devlogContent = updateDevelopmentLogMarkdown(
+    await readExistingTextFile(devlogPath),
+    options.pullRequests,
+    options.contributions
+  );
   const files = [
     {
       path: path.join(options.outputDirectory, "contributions.md"),
@@ -141,8 +148,8 @@ async function writeStandardOutputs(options: {
       content: generateResumeSnippetsMarkdown(options.contributions)
     },
     {
-      path: path.join(options.outputDirectory, "devlog.md"),
-      content: generateDevelopmentLogMarkdown(options.pullRequests, options.contributions)
+      path: devlogPath,
+      content: devlogContent
     },
     {
       path: path.join(options.outputDirectory, "website", "index.md"),
@@ -173,6 +180,12 @@ async function writeSiteOutputs(options: {
 }): Promise<string[]> {
   const website = generateWebsiteMarkdown(options.contributions, options.config);
   const site = options.config.site;
+  const devlogPath = path.join(options.siteDirectory, site?.devlogPath ?? "src/content/devvault/devlog.md");
+  const devlogContent = updateDevelopmentLogMarkdown(
+    await readExistingTextFile(devlogPath),
+    options.pullRequests,
+    options.contributions
+  );
   const files = [
     {
       path: path.join(options.siteDirectory, site?.indexPath ?? "src/content/devvault/index.md"),
@@ -186,8 +199,8 @@ async function writeSiteOutputs(options: {
       content: website.contributions
     },
     {
-      path: path.join(options.siteDirectory, site?.devlogPath ?? "src/content/devvault/devlog.md"),
-      content: generateDevelopmentLogMarkdown(options.pullRequests, options.contributions)
+      path: devlogPath,
+      content: devlogContent
     },
     ...website.blogDrafts.map((draft) => ({
       path: path.join(
@@ -204,4 +217,20 @@ async function writeSiteOutputs(options: {
   }
 
   return files.map((file) => path.relative(options.siteDirectory, file.path));
+}
+
+async function readExistingTextFile(filePath: string): Promise<string | undefined> {
+  try {
+    return await readFile(filePath, "utf8");
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") {
+      return undefined;
+    }
+
+    throw error;
+  }
+}
+
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && "code" in error;
 }
