@@ -16,6 +16,7 @@ describe("createProgram", () => {
       "run",
       "init",
       "branches",
+      "report",
       "prompt"
     ]);
   });

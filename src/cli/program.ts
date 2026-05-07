@@ -6,6 +6,7 @@ import { runDoctorCommand } from "./commands/doctor.js";
 import { runGenerateCommand } from "./commands/generate.js";
 import { runInitCommand } from "./commands/init.js";
 import { runPromptCommand } from "./commands/prompt.js";
+import { runReportCommand } from "./commands/report.js";
 import { runAutomationCommand } from "./commands/run.js";
 import { runStatusCommand } from "./commands/status.js";
 import { runSyncCommand } from "./commands/sync.js";
@@ -50,6 +51,12 @@ export function createProgram(): Command {
     .option("--repo-path <path>", "Local repository path to inspect.")
     .option("--prune", "Delete branches only when linked merged PRs are safe to delete.")
     .action(runBranchesCommand);
+
+  program
+    .command("report")
+    .description("Summarize recent PR activity, current action items, and generated contribution assets.")
+    .option("--since <value>", "Activity window, for example 24h, 7d, 2w, or an ISO date.")
+    .action(runReportCommand);
 
   program
     .command("prompt")
