@@ -10,7 +10,7 @@ import type { PullRequestSnapshot } from "../../src/types/pr.js";
 describe("generateDevelopmentLogMarkdown", () => {
   it("summarizes action items and merged contributions", () => {
     const markdown = generateDevelopmentLogMarkdown(
-      [createPullRequest({ checkConclusion: "FAILURE" })],
+      [createPullRequest({ checkConclusion: "FAILURE", checkRunsTruncated: true })],
       [createContribution()],
       new Date("2026-05-07T00:00:00Z")
     );
@@ -19,6 +19,7 @@ describe("generateDevelopmentLogMarkdown", () => {
     expect(markdown).toContain("## 2026-05-07");
     expect(markdown).toContain("### Needs Action");
     expect(markdown).toContain("CI checks failed.");
+    expect(markdown).toContain("Warning: check runs truncated");
     expect(markdown).toContain("### Recent Merged Contributions");
     expect(markdown).toContain("OpenClaw #74224: TUI | Resynced watchdog.");
   });

@@ -55,10 +55,12 @@ async function enrichPullRequests(
   const enriched: PullRequestSnapshot[] = [];
 
   for (const pr of pullRequests) {
-    const [reviewComments, checkRuns] = await Promise.all([
+    const [reviewCommentResult, checkRunResult] = await Promise.all([
       fetchReviewComments({ client, repo: pr.repo, number: pr.number }),
       fetchCheckRuns({ client, repo: pr.repo, number: pr.number })
     ]);
+    const reviewComments = reviewCommentResult.comments;
+    const checkRuns = checkRunResult.checkRuns;
     const maintainerComments = reviewComments.filter((comment) => comment.isMaintainer);
     const lastMaintainerActivityAt = maintainerComments.at(-1)?.updatedAt;
 
@@ -66,6 +68,8 @@ async function enrichPullRequests(
       ...pr,
       reviewComments,
       checkRuns,
+      ...(reviewCommentResult.truncated ? { reviewCommentsTruncated: true } : {}),
+      ...(checkRunResult.truncated ? { checkRunsTruncated: true } : {}),
       ...(lastMaintainerActivityAt ? { lastMaintainerActivityAt } : {})
     });
   }

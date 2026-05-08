@@ -35,6 +35,9 @@ type PullRequestNode = {
   } | null;
   files?: {
     nodes?: Array<{ path: string } | null> | null;
+    pageInfo?: {
+      hasNextPage: boolean;
+    } | null;
   } | null;
   commits?: {
     nodes?: Array<{
@@ -118,7 +121,8 @@ export function normalizePullRequestNode(repo: string, node: PullRequestNode): P
     labels: normalizeLabels(node),
     ...(node.reviewDecision ? { reviewDecision: node.reviewDecision } : {}),
     checkConclusion: normalizeCheckConclusion(node),
-    changedFiles: normalizeChangedFiles(node)
+    changedFiles: normalizeChangedFiles(node),
+    ...(node.files?.pageInfo?.hasNextPage ? { changedFilesTruncated: true } : {})
   };
 }
 
@@ -192,6 +196,9 @@ const PULL_REQUESTS_QUERY = `
             }
           }
           files(first: 50) {
+            pageInfo {
+              hasNextPage
+            }
             nodes {
               path
             }

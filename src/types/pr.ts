@@ -28,8 +28,11 @@ export type PullRequestSnapshot = {
   checkConclusion?: GitHubCheckConclusion;
   lastMaintainerActivityAt?: string;
   changedFiles: string[];
+  changedFilesTruncated?: boolean;
   reviewComments?: GitHubReviewComment[];
+  reviewCommentsTruncated?: boolean;
   checkRuns?: GitHubCheckRun[];
+  checkRunsTruncated?: boolean;
 };
 
 export type PrLifecycleStatus =

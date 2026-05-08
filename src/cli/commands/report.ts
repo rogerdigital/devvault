@@ -1,4 +1,5 @@
 import { buildActivityReport, parseSinceOption } from "../../core/activityReport.js";
+import { formatSnapshotWarningSuffix } from "../../core/snapshotWarnings.js";
 import { createStore } from "../../storage/store.js";
 
 export type ReportCommandOptions = {
@@ -27,7 +28,9 @@ export async function runReportCommand(options: ReportCommandOptions): Promise<v
     console.log("");
     console.log("Current Needs Action:");
     for (const item of report.currentNeedsAction) {
-      console.log(`- ${item.pr.repo} #${item.pr.number} [${item.action.kind}] ${item.action.reason}`);
+      console.log(
+        `- ${item.pr.repo} #${item.pr.number} [${item.action.kind}] ${item.action.reason}${formatSnapshotWarningSuffix(item.pr)}`
+      );
       console.log(`  Next: ${item.action.next}`);
     }
   }
@@ -46,7 +49,9 @@ export async function runReportCommand(options: ReportCommandOptions): Promise<v
     console.log("");
     console.log("Recent PR Activity:");
     for (const pr of report.recentPullRequests) {
-      console.log(`- ${pr.repo} #${pr.number}: ${pr.title} | Updated: ${pr.updatedAt}`);
+      console.log(
+        `- ${pr.repo} #${pr.number}: ${pr.title} | Updated: ${pr.updatedAt}${formatSnapshotWarningSuffix(pr)}`
+      );
     }
   }
 }

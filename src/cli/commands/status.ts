@@ -1,4 +1,5 @@
 import { groupPullRequests } from "../../core/classifyPullRequests.js";
+import { formatSnapshotWarningSuffix } from "../../core/snapshotWarnings.js";
 import { createStore } from "../../storage/store.js";
 import type { ClassifiedPullRequest } from "../../types/pr.js";
 
@@ -40,5 +41,5 @@ function formatStatusLine(classified: ClassifiedPullRequest): string {
   const { pr, status, action } = classified;
   const prefix = `- ${pr.repo} #${pr.number}`;
 
-  return `${prefix} [${status}/${action.kind}] ${pr.title} | Reason: ${action.reason} | Next: ${action.next}`;
+  return `${prefix} [${status}/${action.kind}] ${pr.title} | Reason: ${action.reason} | Next: ${action.next}${formatSnapshotWarningSuffix(pr)}`;
 }

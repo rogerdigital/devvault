@@ -1,4 +1,5 @@
 import { groupPullRequests } from "../core/classifyPullRequests.js";
+import { formatSnapshotWarningSuffix } from "../core/snapshotWarnings.js";
 import type { ContributionRecord } from "../types/contribution.js";
 import type { PullRequestSnapshot } from "../types/pr.js";
 
@@ -57,7 +58,7 @@ export function generateDevelopmentLogEntry(
   } else {
     for (const item of grouped.needs_action) {
       lines.push(
-        `- ${item.pr.repo} #${item.pr.number}: ${item.pr.title} | ${item.action.reason} | Next: ${item.action.next}`
+        `- ${item.pr.repo} #${item.pr.number}: ${item.pr.title} | ${item.action.reason} | Next: ${item.action.next}${formatSnapshotWarningSuffix(item.pr)}`
       );
     }
   }
@@ -67,7 +68,9 @@ export function generateDevelopmentLogEntry(
     lines.push("- None");
   } else {
     for (const item of grouped.waiting) {
-      lines.push(`- ${item.pr.repo} #${item.pr.number}: ${item.pr.title} | ${item.action.reason}`);
+      lines.push(
+        `- ${item.pr.repo} #${item.pr.number}: ${item.pr.title} | ${item.action.reason}${formatSnapshotWarningSuffix(item.pr)}`
+      );
     }
   }
 

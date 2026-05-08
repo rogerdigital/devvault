@@ -8,6 +8,11 @@ type FetchCheckRunsOptions = {
   number: number;
 };
 
+export type FetchCheckRunsResult = {
+  checkRuns: GitHubCheckRun[];
+  truncated: boolean;
+};
+
 type CheckRunNode = {
   __typename: string;
   name?: string | null;
@@ -27,6 +32,9 @@ type CheckRunsResponse = {
             statusCheckRollup?: {
               contexts?: {
                 nodes?: Array<CheckRunNode | null> | null;
+                pageInfo?: {
+                  hasNextPage: boolean;
+                } | null;
               } | null;
             } | null;
           } | null;
@@ -36,21 +44,24 @@ type CheckRunsResponse = {
   } | null;
 };
 
-export async function fetchCheckRuns(options: FetchCheckRunsOptions): Promise<GitHubCheckRun[]> {
+export async function fetchCheckRuns(options: FetchCheckRunsOptions): Promise<FetchCheckRunsResult> {
   const repo = parseRepoRef(options.repo);
   const response = await options.client.query<CheckRunsResponse>(CHECK_RUNS_QUERY, {
     owner: repo.owner,
     name: repo.name,
     number: options.number
   });
-  const contexts =
-    response.repository?.pullRequest?.commits?.nodes?.[0]?.commit?.statusCheckRollup?.contexts?.nodes ??
-    [];
+  const contextConnection =
+    response.repository?.pullRequest?.commits?.nodes?.[0]?.commit?.statusCheckRollup?.contexts;
+  const contexts = contextConnection?.nodes ?? [];
 
-  return contexts
-    .filter((node): node is CheckRunNode => Boolean(node))
-    .map(normalizeCheckRun)
-    .sort((left, right) => left.name.localeCompare(right.name));
+  return {
+    checkRuns: contexts
+      .filter((node): node is CheckRunNode => Boolean(node))
+      .map(normalizeCheckRun)
+      .sort((left, right) => left.name.localeCompare(right.name)),
+    truncated: Boolean(contextConnection?.pageInfo?.hasNextPage)
+  };
 }
 
 function normalizeCheckRun(node: CheckRunNode): GitHubCheckRun {
@@ -96,6 +107,9 @@ const CHECK_RUNS_QUERY = `
             commit {
               statusCheckRollup {
                 contexts(first: 50) {
+                  pageInfo {
+                    hasNextPage
+                  }
                   nodes {
                     __typename
                     ... on CheckRun {

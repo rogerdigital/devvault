@@ -128,4 +128,28 @@ describe("normalizePullRequestNode", () => {
       checkConclusion: "PENDING"
     });
   });
+
+  it("marks changed files as truncated when GitHub has more file pages", () => {
+    const pr = normalizePullRequestNode("openclaw/openclaw", {
+      id: "PR_large",
+      number: 14,
+      title: "Large",
+      url: "https://github.com/openclaw/openclaw/pull/14",
+      state: "OPEN",
+      isDraft: false,
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-03T00:00:00Z",
+      files: {
+        pageInfo: {
+          hasNextPage: true
+        },
+        nodes: [{ path: "src/index.ts" }]
+      }
+    });
+
+    expect(pr).toMatchObject({
+      changedFiles: ["src/index.ts"],
+      changedFilesTruncated: true
+    });
+  });
 });

@@ -8,6 +8,11 @@ type FetchReviewCommentsOptions = {
   number: number;
 };
 
+export type FetchReviewCommentsResult = {
+  comments: GitHubReviewComment[];
+  truncated: boolean;
+};
+
 type CommentNode = {
   id: string;
   bodyText?: string | null;
@@ -26,9 +31,15 @@ type ReviewCommentsResponse = {
     pullRequest?: {
       comments?: {
         nodes?: Array<CommentNode | null> | null;
+        pageInfo?: {
+          hasNextPage: boolean;
+        } | null;
       } | null;
       reviews?: {
         nodes?: Array<CommentNode | null> | null;
+        pageInfo?: {
+          hasNextPage: boolean;
+        } | null;
       } | null;
     } | null;
   } | null;
@@ -36,7 +47,7 @@ type ReviewCommentsResponse = {
 
 export async function fetchReviewComments(
   options: FetchReviewCommentsOptions
-): Promise<GitHubReviewComment[]> {
+): Promise<FetchReviewCommentsResult> {
   const repo = parseRepoRef(options.repo);
   const response = await options.client.query<ReviewCommentsResponse>(REVIEW_COMMENTS_QUERY, {
     owner: repo.owner,
@@ -49,11 +60,18 @@ export async function fetchReviewComments(
     ...(pullRequest?.reviews?.nodes ?? [])
   ];
 
-  return comments
+  const normalized = comments
     .filter((comment): comment is CommentNode => Boolean(comment))
     .map(normalizeComment)
     .filter((comment) => comment.body.length > 0)
     .sort((left, right) => left.updatedAt.localeCompare(right.updatedAt));
+
+  return {
+    comments: normalized,
+    truncated: Boolean(
+      pullRequest?.comments?.pageInfo?.hasNextPage || pullRequest?.reviews?.pageInfo?.hasNextPage
+    )
+  };
 }
 
 function normalizeComment(comment: CommentNode): GitHubReviewComment {
@@ -77,6 +95,9 @@ const REVIEW_COMMENTS_QUERY = `
     repository(owner: $owner, name: $name) {
       pullRequest(number: $number) {
         comments(last: 20) {
+          pageInfo {
+            hasNextPage
+          }
           nodes {
             id
             bodyText
@@ -90,6 +111,9 @@ const REVIEW_COMMENTS_QUERY = `
           }
         }
         reviews(last: 20) {
+          pageInfo {
+            hasNextPage
+          }
           nodes {
             id
             body
