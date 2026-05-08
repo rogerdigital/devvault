@@ -16,6 +16,45 @@ describe("planBranches", () => {
       { branch: "fix-open", action: "keep" }
     ]);
   });
+
+  it("requires review when a merged PR branch has unmerged local patches", () => {
+    const plans = planBranches(
+      ["fix-merged"],
+      [createPullRequest({ headRefName: "fix-merged", state: "MERGED", number: 1 })],
+      [{ branch: "fix-merged", mergedIntoBase: false }]
+    );
+
+    expect(plans).toMatchObject([
+      {
+        branch: "fix-merged",
+        action: "needs_review",
+        reason: expect.stringContaining("not confirmed")
+      }
+    ]);
+  });
+
+  it("requires review for merged fork PR branches", () => {
+    const plans = planBranches(
+      ["fix-merged"],
+      [
+        createPullRequest({
+          headRefName: "fix-merged",
+          headRepository: "rogerdigital/openclaw",
+          state: "MERGED",
+          number: 1
+        })
+      ],
+      [{ branch: "fix-merged", mergedIntoBase: true }]
+    );
+
+    expect(plans).toMatchObject([
+      {
+        branch: "fix-merged",
+        action: "needs_review",
+        reason: expect.stringContaining("verify this local branch manually")
+      }
+    ]);
+  });
 });
 
 function createPullRequest(overrides: Partial<PullRequestSnapshot>): PullRequestSnapshot {

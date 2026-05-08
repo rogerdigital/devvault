@@ -1,5 +1,4 @@
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 
 import { loadConfig } from "../config/loadConfig.js";
@@ -15,6 +14,7 @@ import type { ContributionRecord } from "../types/contribution.js";
 import type { PullRequestSnapshot } from "../types/pr.js";
 import { buildContributionRecords } from "./buildContributionRecord.js";
 import { mergeContributionRecords } from "./mergeContributionRecord.js";
+import { runCommand } from "./runCommand.js";
 
 export type GeneratedAssetResult = {
   contributions: ContributionRecord[];
@@ -86,34 +86,39 @@ function commitSiteChangesIfConfigured(
     return undefined;
   }
 
-  execFileSync("git", ["add", ...relativeFiles], {
+  runCommand("git", ["add", ...relativeFiles], {
     cwd: siteDirectory,
-    stdio: "ignore"
+    failureMessage: "Failed to stage personal site files.",
+    nextStep: `Check that ${siteDirectory} is a Git repository and the configured site paths are valid.`
   });
 
-  const status = execFileSync("git", ["status", "--short"], {
+  const status = runCommand("git", ["status", "--short"], {
     cwd: siteDirectory,
-    encoding: "utf8"
+    failureMessage: "Failed to inspect personal site Git status.",
+    nextStep: `Run git status in ${siteDirectory}.`
   }).trim();
 
   if (!status) {
     return undefined;
   }
 
-  execFileSync("git", ["commit", "-m", automation.commitMessage ?? "update DevVault contribution assets"], {
+  runCommand("git", ["commit", "-m", automation.commitMessage ?? "update DevVault contribution assets"], {
     cwd: siteDirectory,
-    stdio: "ignore"
+    failureMessage: "Failed to commit personal site changes.",
+    nextStep: "Check the personal site repository status and Git commit configuration."
   });
 
-  const commit = execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+  const commit = runCommand("git", ["rev-parse", "--short", "HEAD"], {
     cwd: siteDirectory,
-    encoding: "utf8"
+    failureMessage: "Failed to read the personal site commit.",
+    nextStep: `Run git rev-parse --short HEAD in ${siteDirectory}.`
   }).trim();
 
   if (automation.push) {
-    execFileSync("git", ["push"], {
+    runCommand("git", ["push"], {
       cwd: siteDirectory,
-      stdio: "ignore"
+      failureMessage: "Failed to push personal site changes.",
+      nextStep: "Check the configured remote and push permissions for the personal site repository."
     });
   }
 

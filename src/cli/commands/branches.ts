@@ -1,7 +1,8 @@
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 
 import { planBranches } from "../../core/branchPlanner.js";
+import type { BranchVerification } from "../../core/branchPlanner.js";
+import { runCommand } from "../../core/runCommand.js";
 import { createStore } from "../../storage/store.js";
 
 export type BranchesCommandOptions = {
@@ -14,7 +15,8 @@ export async function runBranchesCommand(options: BranchesCommandOptions): Promi
   const prs = await createStore().readPullRequests();
   const currentBranch = readCurrentBranch(repoPath);
   const localBranches = readLocalBranches(repoPath).filter((branch) => branch !== currentBranch);
-  const plans = planBranches(localBranches, prs);
+  const verifications = verifyBranchesMergedIntoBase(repoPath, currentBranch, localBranches);
+  const plans = planBranches(localBranches, prs, verifications);
 
   printPlans(plans);
 
@@ -29,9 +31,10 @@ export async function runBranchesCommand(options: BranchesCommandOptions): Promi
     .map((plan) => plan.branch);
 
   for (const branch of branchesToDelete) {
-    execFileSync("git", ["branch", "-d", branch], {
+    runCommand("git", ["branch", "-d", branch], {
       cwd: repoPath,
-      stdio: "ignore"
+      failureMessage: `Failed to delete local branch ${branch}.`,
+      nextStep: "Inspect the branch manually before deleting it."
     });
   }
 
@@ -39,9 +42,10 @@ export async function runBranchesCommand(options: BranchesCommandOptions): Promi
 }
 
 function readLocalBranches(repoPath: string): string[] {
-  return execFileSync("git", ["branch", "--format=%(refname:short)"], {
+  return runCommand("git", ["branch", "--format=%(refname:short)"], {
     cwd: repoPath,
-    encoding: "utf8"
+    failureMessage: "Failed to list local branches.",
+    nextStep: `Check that ${repoPath} is a Git repository.`
   })
     .split("\n")
     .map((branch) => branch.trim())
@@ -49,20 +53,51 @@ function readLocalBranches(repoPath: string): string[] {
 }
 
 function readCurrentBranch(repoPath: string): string {
-  return execFileSync("git", ["branch", "--show-current"], {
+  return runCommand("git", ["branch", "--show-current"], {
     cwd: repoPath,
-    encoding: "utf8"
+    failureMessage: "Failed to read the current branch.",
+    nextStep: `Check that ${repoPath} is a Git repository with an active branch.`
   }).trim();
 }
 
 function ensureCleanWorktree(repoPath: string): void {
-  const status = execFileSync("git", ["status", "--short"], {
+  const status = runCommand("git", ["status", "--short"], {
     cwd: repoPath,
-    encoding: "utf8"
+    failureMessage: "Failed to inspect the target repository status.",
+    nextStep: `Run git status in ${repoPath}.`
   }).trim();
 
   if (status) {
     throw new Error("Refusing to prune branches because the target repository has uncommitted changes.");
+  }
+}
+
+function verifyBranchesMergedIntoBase(
+  repoPath: string,
+  baseBranch: string,
+  branches: string[]
+): BranchVerification[] {
+  return branches.map((branch) => ({
+    branch,
+    mergedIntoBase: isBranchMergedIntoBase(repoPath, baseBranch, branch)
+  }));
+}
+
+function isBranchMergedIntoBase(repoPath: string, baseBranch: string, branch: string): boolean {
+  try {
+    const cherry = runCommand("git", ["cherry", "-v", baseBranch, branch], {
+      cwd: repoPath,
+      failureMessage: `Failed to compare ${branch} with ${baseBranch}.`,
+      nextStep: "Run git cherry manually to verify whether this branch can be deleted."
+    });
+
+    return cherry
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .every((line) => line.startsWith("-"));
+  } catch {
+    return false;
   }
 }
 
