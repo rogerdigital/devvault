@@ -1,5 +1,5 @@
 import path from "node:path";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 
 import { loadConfig } from "../config/loadConfig.js";
 import { generateChangelogMarkdown } from "../generators/changelog.js";
@@ -50,6 +50,10 @@ export async function generateAssets(cwd = process.cwd()): Promise<GeneratedAsse
     : undefined;
 
   if (syncedSiteDirectory) {
+    await ensureDirectoryExists(
+      syncedSiteDirectory,
+      `Configured personal site directory does not exist: ${syncedSiteDirectory}.\nNext: create the site repository directory or update site.sync_directory in config.yaml.`
+    );
     const siteFiles = await writeSiteOutputs({
       config,
       siteDirectory: syncedSiteDirectory,
@@ -74,6 +78,18 @@ export async function generateAssets(cwd = process.cwd()): Promise<GeneratedAsse
     ...(syncedSiteDirectory ? { syncedSiteDirectory } : {}),
     writtenFiles
   };
+}
+
+async function ensureDirectoryExists(directory: string, message: string): Promise<void> {
+  try {
+    await access(directory);
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") {
+      throw new Error(message);
+    }
+
+    throw error;
+  }
 }
 
 function commitSiteChangesIfConfigured(

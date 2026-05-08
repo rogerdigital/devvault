@@ -145,4 +145,12 @@ describe("loadConfig", () => {
       }
     });
   });
+
+  it("explains how to create a missing config", async () => {
+    tempDirectory = await createTempDirectory();
+
+    await expect(loadConfig({ cwd: tempDirectory })).rejects.toThrow(
+      "Next: run devvault init --username <github-user> --repo owner/name"
+    );
+  });
 });

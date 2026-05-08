@@ -15,7 +15,25 @@ export async function loadConfig(options: LoadConfigOptions = {}): Promise<DevVa
   const configPath = options.configPath
     ? path.resolve(cwd, options.configPath)
     : path.join(cwd, "config.yaml");
-  const rawConfig = await readFile(configPath, "utf8");
+  const rawConfig = await readConfigFile(configPath);
 
   return parseDevVaultConfig(parse(rawConfig));
+}
+
+async function readConfigFile(configPath: string): Promise<string> {
+  try {
+    return await readFile(configPath, "utf8");
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") {
+      throw new Error(
+        `DevVault config was not found at ${configPath}.\nNext: run devvault init --username <github-user> --repo owner/name.`
+      );
+    }
+
+    throw error;
+  }
+}
+
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && "code" in error;
 }

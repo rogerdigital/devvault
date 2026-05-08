@@ -52,7 +52,9 @@ export function parseDevVaultConfig(raw: unknown): DevVaultConfig {
   const github = config.github;
 
   if (!isRecord(github)) {
-    throw new ConfigValidationError("Config must include github settings.");
+    throw new ConfigValidationError(
+      "Config must include github settings. Next: run devvault init --username <github-user> --repo owner/name."
+    );
   }
 
   const username = requiredString(github.username, "github.username");
@@ -64,7 +66,9 @@ export function parseDevVaultConfig(raw: unknown): DevVaultConfig {
   const automation = parseAutomation(config.automation);
 
   if (repos.length === 0) {
-    throw new ConfigValidationError("Config must include at least one repo or project repo.");
+    throw new ConfigValidationError(
+      "Config must include at least one repo or project repo. Next: add repos: [owner/name] or a projects[].repos entry."
+    );
   }
 
   return {
@@ -92,14 +96,14 @@ function parseRepos(
   }
 
   if (!Array.isArray(value) || (!options.allowEmpty && value.length === 0)) {
-    throw new ConfigValidationError(`${field} must include at least one repo.`);
+    throw new ConfigValidationError(`${field} must include at least one repo. Expected owner/name.`);
   }
 
   return value.map((repo, index) => {
     const parsed = requiredString(repo, `${field}[${index}]`);
 
     if (!/^[^/\s]+\/[^/\s]+$/.test(parsed)) {
-      throw new ConfigValidationError(`Invalid repo "${parsed}". Expected owner/name.`);
+      throw new ConfigValidationError(`Invalid repo "${parsed}". Expected owner/name, for example openclaw/openclaw.`);
     }
 
     return parsed;
