@@ -26,7 +26,8 @@ export function updateDevelopmentLogMarkdown(
     return generateDevelopmentLogMarkdown(pullRequests, contributions, generatedAt);
   }
 
-  const withoutExistingEntry = removeDateEntry(existing, dateKey);
+  const normalizedExisting = normalizeLegacyDevelopmentLog(existing);
+  const withoutExistingEntry = removeDateEntry(normalizedExisting, dateKey);
   const body = withoutExistingEntry.replace(/^# Development Log\s*/, "").trim();
 
   if (!body) {
@@ -83,6 +84,31 @@ export function generateDevelopmentLogEntry(
 
   lines.push("");
   return lines.join("\n");
+}
+
+function normalizeLegacyDevelopmentLog(markdown: string): string {
+  if (/^## \d{4}-\d{2}-\d{2}$/m.test(markdown)) {
+    return markdown;
+  }
+
+  const generatedAt = markdown.match(/^Generated at:\s*(.+)$/m)?.[1];
+  const dateKey = generatedAt ? parseGeneratedAtDateKey(generatedAt) : undefined;
+
+  if (!dateKey) {
+    return markdown;
+  }
+
+  return markdown.replace(/^# Development Log\s*\n+/, `# Development Log\n\n## ${dateKey}\n\n`);
+}
+
+function parseGeneratedAtDateKey(value: string): string | undefined {
+  const timestamp = new Date(value);
+
+  if (Number.isNaN(timestamp.getTime())) {
+    return undefined;
+  }
+
+  return formatDateKey(timestamp);
 }
 
 function removeDateEntry(markdown: string, dateKey: string): string {

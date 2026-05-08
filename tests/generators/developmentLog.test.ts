@@ -60,6 +60,30 @@ describe("generateDevelopmentLogMarkdown", () => {
     expect(updated).toContain("Updated same-day PR");
     expect(updated).not.toContain("Old same-day PR");
   });
+
+  it("preserves old undated development log content as a dated entry", () => {
+    const existing = [
+      "# Development Log",
+      "",
+      "Generated at: 2026-05-06T08:31:44.899Z",
+      "",
+      "### Needs Action",
+      "",
+      "- openclaw/openclaw #1: Old action item",
+      ""
+    ].join("\n");
+
+    const updated = updateDevelopmentLogMarkdown(
+      existing,
+      [createPullRequest({ number: 2, title: "Current PR" })],
+      [],
+      new Date("2026-05-07T00:00:00Z")
+    );
+
+    expect(updated.indexOf("## 2026-05-07")).toBeLessThan(updated.indexOf("## 2026-05-06"));
+    expect(updated).toContain("Current PR");
+    expect(updated).toContain("Old action item");
+  });
 });
 
 function createPullRequest(overrides: Partial<PullRequestSnapshot> = {}): PullRequestSnapshot {
