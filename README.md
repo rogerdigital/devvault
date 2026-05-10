@@ -20,23 +20,22 @@ Requirements:
 - Git
 - GitHub CLI, optional but recommended for `gh auth token`
 
-Install dependencies, build the CLI, create a starter config, check the environment, then run the main workflow:
-
 ```bash
 pnpm install
 pnpm build
-node dist/cli/index.js init --username <github-user> --repo owner/name
-node dist/cli/index.js doctor
-node dist/cli/index.js run
+pnpm link --global
+devvault init --username <github-user> --repo owner/name [--repo owner/name2 ...] [--token-env GITHUB_TOKEN]
+devvault doctor
+devvault run
 ```
 
-For local development without rebuilding first, use:
+`config.yaml` is created in the current working directory by `devvault init`. Validation errors include the next repair step where possible.
+
+For local development without rebuilding:
 
 ```bash
 pnpm dev -- run
 ```
-
-If `config.yaml` is missing, run `devvault init --username <github-user> --repo owner/name`. Config validation errors include the next repair step where possible.
 
 ## Daily Workflow
 
@@ -58,7 +57,6 @@ That command:
 Useful follow-up commands:
 
 ```bash
-devvault doctor
 devvault status
 devvault report --since 7d
 devvault curate
@@ -132,28 +130,26 @@ When `site.sync_directory` is configured, the directory must already exist. DevV
 
 ## Commands
 
-| Command | Purpose | Reads | Writes | Network |
-| --- | --- | --- | --- | --- |
-| `devvault init` | Create starter config and local directories. | CLI options | `config.yaml`, `data/`, `output/` | No |
-| `devvault doctor` | Check config, auth, and local paths. | `config.yaml`, environment, optional `gh` | None | No GitHub API call |
-| `devvault sync` | Fetch PR snapshots from GitHub. | `config.yaml`, GitHub API | `data/prs.json` | Yes |
-| `devvault status` | Show grouped PR state and next actions. | `data/prs.json` | None | No |
-| `devvault generate` | Rebuild contribution and Markdown assets. | `config.yaml`, `data/prs.json`, `data/contributions.json` | `data/contributions.json`, `output/`, optional site files | No |
-| `devvault run` | Sync PRs, generate assets, and sync site files. | Config, GitHub API, local data | Data, output, optional site repo | Yes |
-| `devvault report --since <window>` | Summarize recent activity and current action items. | Local data | None | No |
-| `devvault curate` | Interactively accept or edit contribution records. | `data/contributions.json` | `data/contributions.json` | No |
-| `devvault branches` | Plan or prune local branches from synced PR data. | `data/prs.json`, target Git repo | Optional branch deletion | No |
-| `devvault prompt` | Generate an agent handoff prompt for a PR. | `data/prs.json` | None | No |
+All commands support `--help` for detailed usage.
 
-### `devvault run`
-
-The main automation command. It syncs PRs, generates assets, syncs configured site files, and prints current action items.
+| Command | Purpose | Network |
+| --- | --- | --- |
+| `devvault init` | Create starter config and local directories. Options: `--username`, `--repo` (repeatable), `--token-env`. | No |
+| `devvault doctor` | Check config, auth, and local paths. | No |
+| `devvault sync` | Fetch PR snapshots from GitHub. | Yes |
+| `devvault status` | Show grouped PR state and next actions. | No |
+| `devvault generate` | Rebuild contribution and Markdown assets. | No |
+| `devvault run` | Sync PRs, generate assets, and sync site files. | Yes |
+| `devvault report` | Summarize recent activity and current action items. | No |
+| `devvault curate` | Interactively accept or edit contribution records. | No |
+| `devvault branches` | Plan or prune local branches from synced PR data. | No |
+| `devvault prompt` | Generate an agent handoff prompt for a PR. | No |
 
 ### `devvault status`
 
 Shows PRs grouped as `Needs Action`, `Waiting`, `Merged`, and `Closed`.
 
-Each row includes a lifecycle status and action kind, for example:
+Each row displays `[lifecycle_status/action_kind]`, for example:
 
 ```text
 owner/repo #123 [ci_failed/fix_ci]
@@ -163,22 +159,20 @@ owner/repo #125 [merge_conflict/resolve_conflict]
 
 Rows may include a warning when GitHub returned only the first page of a large field, for example `Warning: changed files truncated`, `Warning: review comments truncated`, or `Warning: check runs truncated`. Treat those warnings as a signal to inspect the PR directly before making a final decision.
 
-### `devvault report --since <window>`
+### `devvault report`
 
 Summarizes recent PR activity, merged contributions, homepage-ready assets, and current needs-action PRs.
 
-Supported windows:
+```bash
+devvault report --since 7d
+```
 
-- `24h`
-- `7d`
-- `2w`
+`--since` is optional and defaults to `7d`. Supported values:
+
+- Duration: `24h`, `7d`, `2w`
 - ISO date strings
 
 Report output uses the same truncation warnings as `devvault status`.
-
-### `devvault curate`
-
-Reviews contribution records interactively and marks accepted or edited entries as `curated`. Curated fields are preserved when generated data refreshes.
 
 ### `devvault branches`
 
@@ -195,7 +189,11 @@ devvault branches --repo-path ../openclaw --prune
 
 Generates agent handoff prompts.
 
-Supported prompt types:
+```bash
+devvault prompt --pr owner/repo#123 --type fix-ci
+```
+
+Supported types:
 
 - `fix-ci`
 - `address-review`
@@ -204,12 +202,6 @@ Supported prompt types:
 - `maintainer-reply`
 - `resume`
 - `summary`
-
-Example:
-
-```bash
-devvault prompt --pr openclaw/openclaw#74224 --type summary
-```
 
 ## Data and Generated Files
 
@@ -243,20 +235,17 @@ When personal-site sync is configured, DevVault writes the generated website Mar
 
 DevVault is designed to make automated local workflows recoverable:
 
-- Personal-site commits and pushes are disabled unless `automation.site.commit` or `automation.site.push` is explicitly enabled.
-- `site.sync_directory` must already exist; DevVault does not create a new personal-site root implicitly.
-- Git and GitHub CLI command failures include focused context and a next repair step where possible.
 - `branches --prune` requires both a linked merged PR and local patch confirmation through `git cherry -v`.
 - Fork PR branches, unmatched branches, and branches with unconfirmed local patches are left for manual review.
 - Large GitHub fields that are only partially fetched are surfaced through truncation warnings in status, report, and development-log output.
+- Git and GitHub CLI command failures include focused context and a next repair step where possible.
 - Missing or invalid config errors point to the next command or config field to repair.
 
 ## Architecture
 
 ```text
 src/
-  cli/
-    commands/
+  cli/commands/
   config/
   github/
   core/
@@ -280,7 +269,7 @@ GitHub API
 The main stages are:
 
 - Sync: `src/github/` fetches PR metadata, review comments, check runs, and pagination warning signals through the GitHub GraphQL API.
-- Classification: `src/core/` turns snapshots into lifecycle statuses and next-action kinds such as `fix_ci`, `address_review`, or `resolve_conflict`.
+- Classification: `src/core/` turns snapshots into lifecycle statuses and next-action kinds such as `fix_ci`, `address_review`, `resolve_conflict`, `reply_maintainer`, `wait_review`, `wait_merge`, or `curate_contribution`.
 - Contribution ledger: merged PRs are converted into contribution records and merged with existing curated records.
 - Generation: `src/generators/` writes contribution, changelog, resume, development-log, and website Markdown.
 - Site sync: `generate` and `run` can copy generated website Markdown into a configured personal-site repository.
